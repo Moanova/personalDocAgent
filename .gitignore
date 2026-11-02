@@ -1,0 +1,48 @@
+# Environnement virtuel
+venv/
+.venv/
+env/
+.env/
+# Fichiers de configuration locaux
+.env
+.env.local
+.env*.local
+*.env
+*.env.*
+# Fichiers de données (stockage local)
+data/
+# Fichiers de logs
+*.log
+logs/
+*.log.*
+# Fichiers temporaires
+*.tmp
+*.swp
+*.bak
+*.pyc
+__pycache__/
+*.py[co]
+# Fichiers spécifiques à l'IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+# Fichiers de test générés
+.pytest_cache/
+.coverage
+htmlcov/
+# Fichiers de build
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+# Fichiers spécifiques à Python
+__pypackages__/
+.mypy_cache/
+# Fichiers de brouillon ou temporaires
