@@ -1,0 +1,63 @@
+flowchart TD
+    subgraph PARAM["Paramétrage initial"]
+        P0["Politique d'analyse<br/>nb max de mots-cles,<br/>convention de nommage JSON"]
+        P1["Arbre de classification<br/>categories et sous-categories"]
+        RT["Table de routage<br/>extension ou type MIME<br/>vers voie de traitement"]
+    end
+
+    subgraph DET["Étapes déterministes - Python"]
+        IN["Document entrant<br/>PDF, JPG, PNG, TIFF, WebP,<br/>HTML, DOCX, ODT, TXT, MD"]
+        E0T["Voie lecture directe<br/>TXT, MD, HTML (nettoyage),<br/>DOCX, ODT"]
+        E0["Etape 0 - Acquisition et préparation<br/>contrôle du format, découpage<br/>des documents longs"]
+        E1["Etape 1 - Description formelle<br/>titre, date, format, langue,<br/>identifiant interne et externe"]
+        D1{"Duplicata<br/>en base ?"}
+        D0{"Format<br/>accepté ?"}
+        E3A["Rapprochement émetteur<br/>recherche SQL exacte<br/>puis approximative (LIKE)"]
+        E3B{"Emetteur<br/>connu ?"}
+        E3C["File d'attente<br/>emetteurs non identifies,<br/>statut en attente"]
+        E4["Etape 4 - Ecriture<br/>description, classement, sujets,<br/>resume, emetteur,<br/>avec date, source et confiance"]
+        E5A["Creation de l'emetteur<br/>apres validation humaine<br/>ou automatisee selon reglage"]
+        E6["Reprise ciblée<br/>documents a faible confiance<br/>ou en attente"]
+        E7["Contrôle qualité<br/>coherence du classement,<br/>statistiques"]
+        REJ["Rejet<br/>format non supporte,<br/>journalisation"]
+    end
+
+    subgraph AG["Étapes agentiques - Modèles Mistral"]
+        OCR["OCR (handoff)<br/>mistral-ocr-latest<br/>PDF, JPG, PNG, TIFF, WebP<br/>sortie Markdown par page,<br/>score de confiance"]
+        A2["Etape 2 - Analyse de contenu<br/>categorie dans l'arbre,<br/>mots-cles, resume,<br/>emetteur candidat,<br/>attributs d'interet (JSON)"]
+        A3["Arbitrage d'ambiguïté<br/>categorie ou emetteur<br/>proches en cas de doute"]
+    end
+
+    subgraph HUM["Contrôle humain - optionnel"]
+        V1{"Validation de la fiche<br/>proposée ?"}
+        V2{"Validation d'un nouvel<br/>emetteur ?"}
+    end
+
+    RT -.-> E0
+    P0 -.-> A2
+    P1 -.-> A2
+    IN --> E0
+    E0 --> D0
+    D0 -->|"non"| REJ
+    D0 -->|"oui, voie lecture directe"| E0T
+    D0 -->|"oui, voie OCR"| OCR
+    E0T --> E1
+    OCR --> E1
+    E1 --> D1
+    D1 -->|"oui"| E7
+    D1 -->|"non"| A2
+    A2 --> E3A
+    E3A --> E3B
+    E3B -->|"exact"| E4
+    E3B -->|"proche, ambigu"| A3
+    E3B -->|"inconnu"| E3C
+    E3C --> V2
+    A3 --> E4
+    V2 -->|"cree"| E5A
+    E5A --> E4
+    V2 -->|"rejete"| E3C
+    E4 --> V1
+    V1 -->|"validée"| E7
+    V1 -->|"corrigée"| E4
+    E6 --> E3A
+    E7 -.-> E6

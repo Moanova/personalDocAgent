@@ -1,0 +1,64 @@
+erDiagram
+    DOCUMENT ||--o{ DOCUMENT_AGENT : "a pour agent"
+    DOCUMENT ||--o{ DOCUMENT_SUJET : "a pour sujet"
+    DOCUMENT ||--o{ DOCUMENT_DESCRIPTION : "a pour description"
+    DOCUMENT ||--o{ DOCUMENT_CATEGORIE : "est classe dans"
+    CATEGORIE ||--o{ CATEGORIE : "a pour sous-categorie"
+    CATEGORIE ||--o{ DOCUMENT_CATEGORIE : "sert au classement"
+    DOCUMENT }o--|| EMETTEUR : "est emis par"
+    EMETTEUR ||--o{ DOCUMENT : "emet"
+    DOCUMENT ||--o{ CONVERSION : "a pour version texte"
+
+    DOCUMENT {
+        integer doc_id PK
+        text dc_title
+        text dc_date
+        text dc_type
+        text dc_format
+        text dc_identifier
+        text dc_language
+        text dc_rights
+        integer emetteur_id FK
+        text fichier_source
+        text date_ajout
+        text statut
+        text reference
+        text attributs
+    }
+    DOCUMENT_AGENT {
+        integer doc_id FK
+        text role
+        text valeur
+    }
+    DOCUMENT_SUJET {
+        integer doc_id FK
+        text valeur
+    }
+    DOCUMENT_DESCRIPTION {
+        integer doc_id FK
+        text valeur
+    }
+    CATEGORIE {
+        integer categorie_id PK
+        integer parent_id FK
+        text libelle
+        integer profondeur
+        integer actif
+    }
+    DOCUMENT_CATEGORIE {
+        integer doc_id FK
+        integer categorie_id FK
+        integer principal
+        text date_classement
+    }
+    EMETTEUR {
+        integer emetteur_id PK
+        text libelle
+        text categorie_liee
+    }
+    CONVERSION {
+        integer doc_id FK
+        text texte_extrait
+        text modele
+        text date_conversion
+    }
