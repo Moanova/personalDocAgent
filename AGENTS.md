@@ -101,6 +101,7 @@ Il est automatiquement chargé à chaque séance, mais **aucune action structura
   1. Valider que tous les tests passent et que les critères d'acceptation sont respectés.
   2. Mettre à jour `docs/projet/kanban.md` (déplacer la tâche en **Terminé**).
   3. Commiter les changements avec un message explicite.
+  4. Reporter l'état du kanban sur le board personalDocAgent du service miro.com au moyen du connecteur MCP configuré.
 - **Exemple de demande** :
   ```markdown
   Peux-tu valider la tâche T2.1 et la déplacer en Terminé dans le kanban ?
