@@ -1,4 +1,12 @@
-"""Chargement et validation des fichiers de configuration YAML externes."""
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : config.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Loading and validation of the external YAML configuration files."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,47 +15,55 @@ import yaml
 
 
 @dataclass
-class PerimetreAcces:
-    racines_autorisees: list[str] = field(default_factory=list)
+class PerimeterConfig:
+    """File-system access policy: allowed roots, exclusions, symlink handling."""
+
+    allowed_roots: list[str] = field(default_factory=list)
     exclusions: list[str] = field(default_factory=list)
-    suivre_liens_symboliques: bool = False
+    follow_symlinks: bool = False
 
 
 @dataclass
-class Routage:
-    voie_par_defaut: str = "rejeter"
+class RoutingConfig:
+    """Routing table: file extension to processing route."""
+
+    default_route: str = "reject"
     formats: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
-class PolitiqueAnalyse:
-    nb_max_mots_cles: int = 10
-    convention_nommage_json: str = "snake_case"
-    seuil_confiance_auto: float = 0.9
+class AnalysisPolicy:
+    """Analysis policy: keyword cap, JSON naming convention, confidence threshold."""
+
+    max_keywords: int = 10
+    json_naming_convention: str = "snake_case"
+    auto_confidence_threshold: float = 0.9
 
 
 @dataclass
 class Config:
-    perimetre: PerimetreAcces
-    routage: Routage
-    politique: PolitiqueAnalyse
+    """Aggregate of all external configuration sections."""
+
+    perimeter: PerimeterConfig
+    routing: RoutingConfig
+    policy: AnalysisPolicy
 
 
-def _charger_yaml(chemin: Path) -> dict:
-    if not chemin.is_file():
-        raise FileNotFoundError(f"Fichier de configuration introuvable : {chemin}")
-    with chemin.open("r", encoding="utf-8") as f:
+def _load_yaml(path: Path) -> dict:
+    if not path.is_file():
+        raise FileNotFoundError(f"Configuration file not found: {path}")
+    with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
-def charger_config(repertoire: Path) -> Config:
-    """Charger et valider les fichiers YAML du répertoire de configuration."""
-    repertoire = Path(repertoire)
-    perimetre = _charger_yaml(repertoire / "perimetre_acces.yaml")
-    routage = _charger_yaml(repertoire / "routage.yaml")
-    politique = _charger_yaml(repertoire / "politique_analyse.yaml")
+def load_config(directory: Path) -> Config:
+    """Load and validate the YAML files of the configuration directory."""
+    directory = Path(directory)
+    perimeter = _load_yaml(directory / "perimeter_access.yaml")
+    routing = _load_yaml(directory / "routing.yaml")
+    policy = _load_yaml(directory / "analysis_policy.yaml")
     return Config(
-        perimetre=PerimetreAcces(**perimetre),
-        routage=Routage(**routage),
-        politique=PolitiqueAnalyse(**politique),
+        perimeter=PerimeterConfig(**perimeter),
+        routing=RoutingConfig(**routing),
+        policy=AnalysisPolicy(**policy),
     )

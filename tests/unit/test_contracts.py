@@ -1,81 +1,91 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : tests/unit/test_contracts.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Unit tests for the interface contracts (dataclasses)."""
+
 import inspect
 import json
 from dataclasses import asdict
 
 import pytest
 
-from personaldocagent import analyse, emetteurs, pipeline
-from personaldocagent.acquisition import lecture_directe, ocr
+from personaldocagent import analysis, issuers, pipeline
+from personaldocagent.acquisition import direct_read, ocr
 from personaldocagent.contracts import (
-    FicheAnalyse,
-    FicheDocument,
-    FiltresRecherche,
-    ResultatAcquisition,
-    ResultatEcriture,
-    ResultatRapprochement,
+    AcquisitionResult,
+    AnalysisRecord,
+    DocumentRecord,
+    IssuerMatch,
+    SearchFilters,
+    WriteResult,
 )
-from personaldocagent.interrogation import outils
+from personaldocagent.interrogation import tools
 
 
-def test_resultat_acquisition_serialisable_en_json():
-    r = ResultatAcquisition(
-        fichier_source="/fonds/a.pdf",
-        voie="ocr",
-        texte="# Facture",
-        modele="mistral-ocr-latest",
-        date_conversion="2026-11-11",
+def test_acquisition_result_json_serializable():
+    r = AcquisitionResult(
+        source_file="/collection/a.pdf",
+        route="ocr",
+        text="# Invoice",
+        model="mistral-ocr-latest",
+        conversion_date="2026-11-11",
     )
     d = asdict(r)
     assert json.loads(json.dumps(d)) == d
-    assert d["voie"] == "ocr"
+    assert d["route"] == "ocr"
 
 
-def test_fiche_analyse_valider_limite_mots_cles():
-    fiche = FicheAnalyse(
-        categorie_id=15,
-        emetteur_candidat="EDF",
-        mots_cles=["mot"] * 11,
-        resume="résumé",
-        attributs={"montant_eur": 87.4},
-        confiance=0.95,
+def test_analysis_record_validate_keyword_limit():
+    record = AnalysisRecord(
+        category_id=15,
+        issuer_candidate="EDF",
+        keywords=["word"] * 11,
+        summary="summary",
+        attributes={"amount_eur": 87.4},
+        confidence=0.95,
     )
     with pytest.raises(ValueError):
-        fiche.valider(nb_max_mots_cles=10)
-    fiche.mots_cles = fiche.mots_cles[:10]
-    fiche.valider(nb_max_mots_cles=10)
+        record.validate(max_keywords=10)
+    record.keywords = record.keywords[:10]
+    record.validate(max_keywords=10)
 
 
-def test_fiche_analyse_attributs_json_roundtrip():
-    fiche = FicheAnalyse(1, None, [], "r", {"montant_eur": 87.4}, 0.9)
-    assert json.loads(json.dumps(asdict(fiche)["attributs"])) == {"montant_eur": 87.4}
+def test_analysis_record_attributes_json_roundtrip():
+    record = AnalysisRecord(1, None, [], "s", {"amount_eur": 87.4}, 0.9)
+    assert json.loads(json.dumps(asdict(record)["attributes"])) == {"amount_eur": 87.4}
 
 
-def test_fiche_document_valeurs_par_defaut_et_json():
-    f = FicheDocument(fichier_source="/x.pdf", date_ajout="2026-11-11")
-    assert f.statut == "actif"
-    assert f.attributs == "{}"
-    assert f.agents == [] and f.sujets == [] and f.categories == []
+def test_document_record_defaults_and_json():
+    r = DocumentRecord(source_file="/x.pdf", date_added="2026-11-11")
+    assert r.status == "active"
+    assert r.attributes == "{}"
+    assert r.agents == [] and r.subjects == [] and r.categories == []
+    json.dumps(asdict(r))
+
+
+def test_issuer_match_and_write_result():
+    m = IssuerMatch(status="known", issuer_id=3)
+    assert asdict(m)["status"] == "known"
+    w = WriteResult(doc_id=1, written=True)
+    assert w.reason is None
+
+
+def test_search_filters_all_optional():
+    f = SearchFilters(status="active", keyword="invoice")
+    assert f.category_id is None and f.issuer_id is None
     json.dumps(asdict(f))
 
 
-def test_resultats_rapprochement_et_ecriture():
-    r = ResultatRapprochement(statut="connu", emetteur_id=3)
-    assert asdict(r)["statut"] == "connu"
-    e = ResultatEcriture(doc_id=1, ecrit=True)
-    assert e.raison is None
-
-
-def test_filtres_recherche_tous_optionnels():
-    f = FiltresRecherche(statut="actif", mot_cle="facture")
-    assert f.categorie_id is None and f.emetteur_id is None
-    json.dumps(asdict(f))
-
-
-def test_signatures_des_stubs_referencent_les_contrats():
-    assert "ResultatAcquisition" in str(inspect.signature(lecture_directe.lire).return_annotation)
-    assert "ResultatAcquisition" in str(inspect.signature(ocr.convertir).return_annotation)
-    assert "FicheAnalyse" in str(inspect.signature(analyse.analyser).return_annotation)
-    assert "ResultatRapprochement" in str(inspect.signature(emetteurs.rapprocher).return_annotation)
-    assert "ResultatEcriture" in str(inspect.signature(pipeline.executer).return_annotation)
-    param = inspect.signature(outils.rechercher_documents).parameters["filtres"]
-    assert "FiltresRecherche" in str(param.annotation)
+def test_stub_signatures_reference_the_contracts():
+    assert "AcquisitionResult" in str(inspect.signature(direct_read.read_direct).return_annotation)
+    assert "AcquisitionResult" in str(inspect.signature(ocr.convert).return_annotation)
+    assert "AnalysisRecord" in str(inspect.signature(analysis.analyze).return_annotation)
+    assert "IssuerMatch" in str(inspect.signature(issuers.match_issuer).return_annotation)
+    assert "WriteResult" in str(inspect.signature(pipeline.run).return_annotation)
+    param = inspect.signature(tools.search_documents).parameters["filters"]
+    assert "SearchFilters" in str(param.annotation)

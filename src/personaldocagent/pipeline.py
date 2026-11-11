@@ -1,10 +1,18 @@
-"""Orchestration déterministe des étapes 0-7 du pipeline d'indexation."""
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : pipeline.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Deterministic orchestration of pipeline steps 0-7."""
 
 from pathlib import Path
 
-from .contracts import ResultatEcriture
+from .contracts import WriteResult
 
 
-def executer(repertoire_config: Path, racine: Path) -> list[ResultatEcriture]:
-    """Exécuter le pipeline complet sur les fichiers d'une racine autorisée."""
+def run(config_dir: Path, root: Path) -> list[WriteResult]:
+    """Run the full pipeline over the files of an allowed root."""
     raise NotImplementedError

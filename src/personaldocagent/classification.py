@@ -1,4 +1,12 @@
-"""Arbre de classification : chargement de la graine YAML et export aplati."""
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : classification.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Classification tree: YAML seed loading and flat export."""
 
 import sqlite3
 from pathlib import Path
@@ -6,56 +14,56 @@ from pathlib import Path
 import yaml
 
 
-def charger_arbre(conn: sqlite3.Connection, graine: Path) -> int:
-    """Charger la graine YAML dans la table categorie (idempotent). Retourne le nombre de catégories actives."""
-    with Path(graine).open("r", encoding="utf-8") as f:
-        racines = yaml.safe_load(f)
-    if not isinstance(racines, list):
-        raise ValueError(f"Graine invalide (liste de nœuds attendue) : {graine}")
+def load_tree(conn: sqlite3.Connection, seed: Path) -> int:
+    """Load the YAML seed into the category table (idempotent). Return the number of active categories."""
+    with Path(seed).open("r", encoding="utf-8") as f:
+        roots = yaml.safe_load(f)
+    if not isinstance(roots, list):
+        raise ValueError(f"Invalid seed (list of nodes expected): {seed}")
     total = 0
-    for noeud in racines:
-        total += _charger_noeud(conn, noeud, parent_id=None, profondeur=1)
+    for node in roots:
+        total += _load_node(conn, node, parent_id=None, depth=1)
     conn.commit()
     return total
 
 
-def _charger_noeud(conn: sqlite3.Connection, noeud: dict, parent_id: int | None, profondeur: int) -> int:
-    categorie_id = _trouver_ou_creer(conn, parent_id, noeud["libelle"], profondeur)
+def _load_node(conn: sqlite3.Connection, node: dict, parent_id: int | None, depth: int) -> int:
+    category_id = _find_or_create(conn, parent_id, node["label"], depth)
     total = 1
-    for enfant in noeud.get("enfants") or []:
-        total += _charger_noeud(conn, enfant, categorie_id, profondeur + 1)
+    for child in node.get("children") or []:
+        total += _load_node(conn, child, category_id, depth + 1)
     return total
 
 
-def _trouver_ou_creer(conn: sqlite3.Connection, parent_id: int | None, libelle: str, profondeur: int) -> int:
+def _find_or_create(conn: sqlite3.Connection, parent_id: int | None, label: str, depth: int) -> int:
     if parent_id is None:
         row = conn.execute(
-            "SELECT categorie_id FROM categorie WHERE parent_id IS NULL AND libelle = ?",
-            (libelle,),
+            "SELECT category_id FROM category WHERE parent_id IS NULL AND label = ?",
+            (label,),
         ).fetchone()
     else:
         row = conn.execute(
-            "SELECT categorie_id FROM categorie WHERE parent_id = ? AND libelle = ?",
-            (parent_id, libelle),
+            "SELECT category_id FROM category WHERE parent_id = ? AND label = ?",
+            (parent_id, label),
         ).fetchone()
     if row is not None:
         conn.execute(
-            "UPDATE categorie SET profondeur = ?, actif = 1 WHERE categorie_id = ?",
-            (profondeur, row[0]),
+            "UPDATE category SET depth = ?, active = 1 WHERE category_id = ?",
+            (depth, row[0]),
         )
         return row[0]
     cur = conn.execute(
-        "INSERT INTO categorie (parent_id, libelle, profondeur, actif) VALUES (?, ?, ?, 1)",
-        (parent_id, libelle, profondeur),
+        "INSERT INTO category (parent_id, label, depth, active) VALUES (?, ?, ?, 1)",
+        (parent_id, label, depth),
     )
     return cur.lastrowid
 
 
-def exporter_aplati(conn: sqlite3.Connection) -> str:
-    """Export aplati des catégories actives (id + libellé indenté par profondeur) pour le contexte de l'agent."""
-    lignes = []
+def export_flat(conn: sqlite3.Connection) -> str:
+    """Flat export of active categories (id: label, indented by depth) for the analysis agent context."""
+    lines = []
     for row in conn.execute(
-        "SELECT categorie_id, libelle, profondeur FROM categorie WHERE actif = 1 ORDER BY categorie_id"
+        "SELECT category_id, label, depth FROM category WHERE active = 1 ORDER BY category_id"
     ):
-        lignes.append(f"{'  ' * (row['profondeur'] - 1)}{row['categorie_id']}: {row['libelle']}")
-    return "\n".join(lignes)
+        lines.append(f"{'  ' * (row['depth'] - 1)}{row['category_id']}: {row['label']}")
+    return "\n".join(lines)

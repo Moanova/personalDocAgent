@@ -1,29 +1,43 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : tests/unit/test_cli.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Unit tests for the CLI."""
+
 import pytest
 
 from personaldocagent.cli import main
 
 
-def test_aide_globale_liste_les_commandes(capsys):
+def test_global_help_lists_commands(capsys):
+    """--help exits 0 and lists the four subcommands."""
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
     assert exc.value.code == 0
-    sortie = capsys.readouterr().out
-    for commande in ("init-db", "charger-arbre", "pipeline", "interroger"):
-        assert commande in sortie
+    out = capsys.readouterr().out
+    for command in ("init-db", "load-tree", "pipeline", "query"):
+        assert command in out
 
 
-def test_commande_inconnue_est_rejetee():
+def test_unknown_command_is_rejected():
+    """An unknown subcommand exits with a non-zero code."""
     with pytest.raises(SystemExit) as exc:
-        main(["commande-inexistante"])
+        main(["no-such-command"])
     assert exc.value.code != 0
 
 
-def test_commande_sans_implementation_leve_not_implemented():
+def test_unimplemented_command_raises_not_implemented():
+    """A not-yet-implemented subcommand raises NotImplementedError."""
     with pytest.raises(NotImplementedError):
         main(["pipeline"])
 
 
-def test_init_db_cree_la_base(tmp_path):
-    base = tmp_path / "sous" / "test.db"
+def test_init_db_creates_the_database(tmp_path):
+    """init-db with --base creates the database file."""
+    base = tmp_path / "sub" / "test.db"
     assert main(["--base", str(base), "init-db"]) == 0
     assert base.is_file()

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "personaldocagent"
 version = "0.1.0"
-description = "Agent documentaire personnel : indexation, classement et interrogation d'un fonds documentaire (SQLite, pipeline déterministe et appels Mistral)"
+description = "Personal document agent: indexing, classification and querying of a personal document collection (SQLite, deterministic pipeline and Mistral calls)"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

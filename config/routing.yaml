@@ -1,0 +1,12 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : routing.yaml
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+default_route: reject
+formats:
+  direct_read: [.txt, .md, .html, .htm, .docx, .odt]
+  ocr: [.pdf, .jpg, .jpeg, .png, .tif, .tiff, .webp]

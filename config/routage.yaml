@@ -1,4 +1,0 @@
-voie_par_defaut: rejeter
-formats:
-  lecture_directe: [.txt, .md, .html, .htm, .docx, .odt]
-  ocr: [.pdf, .jpg, .jpeg, .png, .tif, .tiff, .webp]

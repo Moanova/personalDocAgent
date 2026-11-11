@@ -22,6 +22,7 @@ Fondations communes à tout le pipeline (cf. `docs/conception/conception.md`, §
 | T1.3 | Arbre de classification (graine YAML + chargement) | T1.1, T1.2 |
 | T1.4 | Configuration externe (périmètre d'accès + table de routage) | T1.1 |
 | T1.5 | Contrats d'interface entre modules | T1.2, T1.3, T1.4 |
+| T1.6 | Alignement standards de codage | T1.1-T1.5 |
 
 
 ---
@@ -43,6 +44,7 @@ T1.2
 T1.3
 T1.4
 T1.5
+T1.6
 
 
 ## Annulé
@@ -65,24 +67,24 @@ T1.5
   ├── __main__.py            # point d'entrée CLI
   ├── cli.py
   ├── config.py              # chargement/validation des YAML externes
-  ├── perimetre.py           # évaluation des chemins (deny by default)
-  ├── routage.py             # table de routage + contrôles format/duplicata
+  ├── perimeter.py           # évaluation des chemins (deny by default)
+  ├── routing.py             # table de routage + contrôles format/duplicata
   ├── contracts.py           # dataclasses d'interface entre modules
   ├── db/
   │   ├── __init__.py
   │   ├── schema.sql         # 8 tables + index FTS5
-  │   └── connexion.py
+  │   └── connection.py
   ├── classification.py      # graine YAML -> table categorie, export aplati
   ├── acquisition/
   │   ├── __init__.py
-  │   ├── lecture_directe.py # TXT, MD, HTML, DOCX, ODT
+  │   ├── direct_read.py # TXT, MD, HTML, DOCX, ODT
   │   └── ocr.py             # handoff Mistral OCR, persistance dans conversion
   ├── pipeline.py            # orchestration des étapes 0-7
-  ├── analyse.py             # étape 2 agentique (prompts + function calling)
-  ├── emetteurs.py           # rapprochement exact puis approximatif
+  ├── analysis.py             # étape 2 agentique (prompts + function calling)
+  ├── issuers.py           # rapprochement exact puis approximatif
   ├── interrogation/
   │   ├── __init__.py
-  │   ├── outils.py          # 4 outils en lecture seule
+  │   ├── tools.py          # 4 outils en lecture seule
   │   └── agent.py           # chat.completions, historique maintenu localement
   └── prompts/               # prompts versionnés dans le code
   ```
@@ -91,19 +93,19 @@ T1.5
 
 ## T1.2 — Schéma SQLite et index FTS5
 - **Objectif** : créer le schéma de la base (fichier unique SQLite, sans serveur) à partir de `docs/conception/modèleDonnées.mmd`.
-- **Livrables** : `db/schema.sql` (tables `document`, `document_agent`, `document_sujet`, `document_description`, `categorie`, `document_categorie`, `emetteur`, `conversion`, clés étrangères et index), table virtuelle FTS5 sur `conversion(texte_extrait)` pour `rechercher_plein_texte`, `db/connexion.py` (`init_db`, connexion contextuelle).
+- **Livrables** : `db/schema.sql` (tables `document`, `document_agent`, `document_subject` (`document_sujet`), `document_description`, `category` (`categorie`), `document_category` (`document_categorie`), `issuer` (`emetteur`), `conversion`, clés étrangères et index), table virtuelle FTS5 sur `conversion(texte_extrait)` pour `search_fulltext`, `db/connection.py` (`init_db`, connexion contextuelle).
 - **Critères d'acceptation** : création d'une base from scratch, intégrité référentielle, requête FTS5 fonctionnelle, tests unitaires au minimum.
 - **Dépendances** : T1.1.
 
 ## T1.3 — Arbre de classification (graine YAML + chargement)
 - **Objectif** : rendre l'arbre de classement opérationnel avant tout traitement (cf. `conception.md` §4 : « l'arbre doit exister avant le premier traitement »).
-- **Livrables** : `config/classification.yaml` (transposition de `docs/conception/classificationInitiale.md`, catégorie « Non classé » incluse), `classification.py` (chargement YAML → table `categorie` avec `parent_id`, `profondeur`, `actif` ; export aplati pour le contexte de l'agent).
+- **Livrables** : `config/classification.yaml` (transposition de `docs/conception/classificationInitiale.md`, catégorie « Non classé » incluse), `classification.py` (chargement YAML → table `category` (`categorie`) avec `parent_id`, `depth` (`profondeur`), `active` (`actif`) ; export aplati pour le contexte de l'agent).
 - **Critères d'acceptation** : arbre chargé depuis le YAML, profondeurs correctes, export aplati généré, rechargement idempotent.
 - **Dépendances** : T1.1, T1.2.
 
 ## T1.4 — Configuration externe (périmètre d'accès + table de routage)
 - **Objectif** : externaliser le paramétrage exigé par `conception.md` §3bis (périmètre d'accès au système de fichiers) et §5 (table de routage).
-- **Livrables** : `config/perimetre_acces.yaml` (racines autorisées, exclusions glob, `suivre_liens_symboliques: false`) + `perimetre.py` (résolution canonique realpath, deny by default, ordre exclusion > autorisation, journalisation des rejets) ; `config/routage.yaml` (extension/MIME → voie `lecture_directe` ou `ocr`) + contrôles format et duplicata dans `routage.py`.
+- **Livrables** : `config/perimeter_access.yaml` (racines autorisées, exclusions glob, `suivre_liens_symboliques: false`) + `perimeter.py` (résolution canonique realpath, deny by default, ordre exclusion > autorisation, journalisation des rejets) ; `config/routing.yaml` (extension/MIME → voie `lecture_directe` ou `ocr`) + contrôles format et duplicata dans `routing.py`.
 - **Critères d'acceptation** : un chemin hors périmètre est rejeté et journalisé sans être lu ; une extension inconnue est rejetée ; une exclusion prime sur une autorisation.
 - **Dépendances** : T1.1.
 
@@ -112,3 +114,10 @@ T1.5
 - **Livrables** : `contracts.py` (dataclasses + type hints, sans dépendance ajoutée) décrivant les objets échangés : résultat d'acquisition, fiche d'analyse (catégorie, émetteur candidat, mots-clés, résumé, attributs JSON), résultat d'écriture.
 - **Critères d'acceptation** : chaque module du socle importe ses contrats depuis `contracts.py` ; tests de sérialisation des contrats.
 - **Dépendances** : T1.2, T1.3, T1.4.
+
+## T1.6 — Alignement standards de codage
+- **Objectif** : appliquer les standards à toute l'arborescence : en-tête standardisé sur chaque script, docstrings et commentaires en anglais sur tous les scripts/classes/méthodes, identifiants (modules, classes, méthodes, variables) en anglais, `README.md` en français + `README.en.md`, docs projet en français, libellés de classification en français.
+- **Livrables** : renommage des modules (`perimeter.py`, `routing.py`, `issuers.py`, `analysis.py`, `db/connection.py`, `acquisition/direct_read.py`, `interrogation/tools.py`), des fonctions/classes/contrats en anglais, des clés YAML de config en anglais (`allowed_roots`, `follow_symlinks`, `label`/`children` pour la classification), en-tête standard sur tous les scripts, `README.en.md`.
+- **Choix acté** : le schéma SQL (tables/colonnes) est anglicisé (`issuer`, `category`, `source_file`, `status`…) ; les équivalents français sont conservés entre parenthèses dans `docs/conception/conception.md` et `docs/conception/modèleDonnées.mmd`.
+- **Critères d'acceptation** : `python -m pytest` passe intégralement après renommage.
+- **Dépendances** : T1.1-T1.5.

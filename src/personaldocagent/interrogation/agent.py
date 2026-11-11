@@ -1,6 +1,14 @@
-"""Agent d'interrogation : boucle chat.completions avec function calling, historique maintenu localement."""
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : interrogation/agent.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Query agent: chat.completions loop with function calling, history kept locally."""
 
 
-def interroger(question: str, historique: list | None = None) -> str:
-    """Répondre à une question sur le fonds en orchestrant les outils de lecture."""
+def ask(question: str, history: list | None = None) -> str:
+    """Answer a question about the collection by orchestrating the read-only tools."""
     raise NotImplementedError

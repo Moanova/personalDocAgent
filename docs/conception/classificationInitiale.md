@@ -1,77 +1,77 @@
 # Graine du plan de classement — à ajuster librement.
 # Règle : progression du général au particulier, 3 niveaux maximum.
 
-- libelle: Identité et famille
-  enfants:
-    - libelle: État civil et papiers d'identité
-    - libelle: Citoyenneté et élections
-    - libelle: Famille
-      enfants:
-        - libelle: Actes etlivrets
-        - libelle: Scolarité des enfants
+- label: Identité et famille
+  children:
+    - label: État civil et papiers d'identité
+    - label: Citoyenneté et élections
+    - label: Famille
+      children:
+        - label: Actes etlivrets
+        - label: Scolarité des enfants
 
-- libelle: Santé
-  enfants:
-    - libelle: Sécurité sociale
-    - libelle: Mutuelle complémentaire
-    - libelle: Médecins et soins
-    - libelle: Pharmacie
-    - libelle: Hospitalisation
+- label: Santé
+  children:
+    - label: Sécurité sociale
+    - label: Mutuelle complémentaire
+    - label: Médecins et soins
+    - label: Pharmacie
+    - label: Hospitalisation
 
-- libelle: Finances
-  enfants:
-    - libelle: Banque
-      enfants:
-        - libelle: Relevés de compte
-        - libelle: Virements et prélèvements
-        - libelle: Épargne et placements
-    - libelle: Impôts
-      enfants:
-        - libelle: Impôt sur le revenu
-        - libelle: Taxe foncière et habitation
-        - libelle: Justificatifs fiscaux
-    - libelle: Assurances
-    - libelle: Crédits et emprunts
+- label: Finances
+  children:
+    - label: Banque
+      children:
+        - label: Relevés de compte
+        - label: Virements et prélèvements
+        - label: Épargne et placements
+    - label: Impôts
+      children:
+        - label: Impôt sur le revenu
+        - label: Taxe foncière et habitation
+        - label: Justificatifs fiscaux
+    - label: Assurances
+    - label: Crédits et emprunts
 
-- libelle: Logement
-  enfants:
-    - libelle: Bail et loyer
-    - libelle: Charges et fournisseurs
-      enfants:
-        - libelle: Électricité et gaz
-        - libelle: Eau
-        - libelle: Internet et téléphonie
-    - libelle: Copropriété
-      enfants:
-        - libelle: Assemblées générales
-        - libelle: Charges de copropriété
-        - libelle: Travaux
-    - libelle: Travaux et entretien
+- label: Logement
+  children:
+    - label: Bail et loyer
+    - label: Charges et fournisseurs
+      children:
+        - label: Électricité et gaz
+        - label: Eau
+        - label: Internet et téléphonie
+    - label: Copropriété
+      children:
+        - label: Assemblées générales
+        - label: Charges de copropriété
+        - label: Travaux
+    - label: Travaux et entretien
 
-- libelle: Emploi et formation
-  enfants:
-    - libelle: Contrats de travail
-    - libelle: Bulletins de salaire
-    - libelle: Retraite
-    - libelle: Formation et diplômes
+- label: Emploi et formation
+  children:
+    - label: Contrats de travail
+    - label: Bulletins de salaire
+    - label: Retraite
+    - label: Formation et diplômes
 
-- libelle: Véhicules et transport
-  enfants:
-    - libelle: Cartes grises et permis
-    - libelle: Assurance véhicule
-    - libelle: Entretien et réparations
-    - libelle: Amendes et contraventions
+- label: Véhicules et transport
+  children:
+    - label: Cartes grises et permis
+    - label: Assurance véhicule
+    - label: Entretien et réparations
+    - label: Amendes et contraventions
 
-- libelle: Vie quotidienne
-  enfants:
-    - libelle: Achats et garanties
-    - libelle: Abonnements
-    - libelle: Correspondances diverses
+- label: Vie quotidienne
+  children:
+    - label: Achats et garanties
+    - label: Abonnements
+    - label: Correspondances diverses
 
-- libelle: Documents intellectuels
-  enfants:
-    - libelle: Bibliographie universitaire
-    - libelle: Notes et comptes-rendus
-    - libelle: Publications personnelles
+- label: Documents intellectuels
+  children:
+    - label: Bibliographie universitaire
+    - label: Notes et comptes-rendus
+    - label: Publications personnelles
 
-- libelle: Non classé
+- label: Non classé

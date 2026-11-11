@@ -1,15 +1,15 @@
 erDiagram
-    DOCUMENT ||--o{ DOCUMENT_AGENT : "a pour agent"
-    DOCUMENT ||--o{ DOCUMENT_SUJET : "a pour sujet"
-    DOCUMENT ||--o{ DOCUMENT_DESCRIPTION : "a pour description"
-    DOCUMENT ||--o{ DOCUMENT_CATEGORIE : "est classe dans"
-    CATEGORIE ||--o{ CATEGORIE : "a pour sous-categorie"
-    CATEGORIE ||--o{ DOCUMENT_CATEGORIE : "sert au classement"
-    DOCUMENT }o--|| EMETTEUR : "est emis par"
-    EMETTEUR ||--o{ DOCUMENT : "emet"
-    DOCUMENT ||--o{ CONVERSION : "a pour version texte"
+    DOCUMENT ||--o{ DOCUMENT_AGENT : "has agent"
+    DOCUMENT ||--o{ DOCUMENT_SUBJECT : "has subject (a pour sujet)"
+    DOCUMENT ||--o{ DOCUMENT_DESCRIPTION : "has description (a pour description)"
+    DOCUMENT ||--o{ DOCUMENT_CATEGORY : "is classified in (est classé dans)"
+    CATEGORY "categorie" ||--o{ CATEGORY : "has sub-category (a pour sous-catégorie)"
+    CATEGORY ||--o{ DOCUMENT_CATEGORY : "used for classification (sert au classement)"
+    DOCUMENT }o--|| ISSUER "emetteur" : "is issued by (est émis par)"
+    ISSUER ||--o{ DOCUMENT : "issues (émet)"
+    DOCUMENT ||--o{ CONVERSION : "has text version (a pour version texte)"
 
-    DOCUMENT {
+    DOCUMENT "document" {
         integer doc_id PK
         text dc_title
         text dc_date
@@ -18,47 +18,47 @@ erDiagram
         text dc_identifier
         text dc_language
         text dc_rights
-        integer emetteur_id FK
-        text fichier_source
-        text date_ajout
-        text statut
+        integer issuer_id FK "emetteur_id"
+        text source_file "fichier_source"
+        text date_added "date_ajout"
+        text status "statut"
         text reference
-        text attributs
+        text attributes "attributs"
     }
-    DOCUMENT_AGENT {
+    DOCUMENT_AGENT "document_agent" {
         integer doc_id FK
         text role
-        text valeur
+        text value "valeur"
     }
-    DOCUMENT_SUJET {
+    DOCUMENT_SUBJECT "document_sujet" {
         integer doc_id FK
-        text valeur
+        text value "valeur"
     }
-    DOCUMENT_DESCRIPTION {
+    DOCUMENT_DESCRIPTION "document_description" {
         integer doc_id FK
-        text valeur
+        text value "valeur"
     }
-    CATEGORIE {
-        integer categorie_id PK
+    CATEGORY "categorie" {
+        integer category_id PK "categorie_id"
         integer parent_id FK
-        text libelle
-        integer profondeur
-        integer actif
+        text label "libellé"
+        integer depth "profondeur"
+        integer active "actif"
     }
-    DOCUMENT_CATEGORIE {
+    DOCUMENT_CATEGORY "document_categorie" {
         integer doc_id FK
-        integer categorie_id FK
-        integer principal
-        text date_classement
+        integer category_id FK "categorie_id"
+        integer is_primary "principal"
+        text classification_date "date_classement"
     }
-    EMETTEUR {
-        integer emetteur_id PK
-        text libelle
-        text categorie_liee
+    ISSUER "emetteur" {
+        integer issuer_id PK "emetteur_id"
+        text label "libellé"
+        text linked_category "categorie_liee"
     }
-    CONVERSION {
+    CONVERSION "conversion" {
         integer doc_id FK
-        text texte_extrait
-        text modele
-        text date_conversion
+        text extracted_text "texte_extrait"
+        text model "modele"
+        text conversion_date "date_conversion"
     }

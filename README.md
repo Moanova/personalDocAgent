@@ -1,8 +1,12 @@
 # personalDocAgent
 
+> English version: [README.en.md](README.en.md)
+
 Applicatif Python indexant les documents stockés sur l'espace privé d'un particulier ou d'un foyer (documents administratifs, intellectuels, courants) pour les retrouver, les décrire et les organiser.
 
 Principes de conception (détaillés dans `docs/conception/conception.md`) : base SQLite fichier unique sans serveur, pipeline déterministe en Python avec étapes agentiques Mistral (OCR, analyse de contenu), périmètre d'accès au système de fichiers en deny by default, prompts versionnés dans le code source.
+
+Standards de codage : scripts, classes, méthodes et variables en anglais avec docstring et en-tête standard ; documentation projet en français ; `AGENTS.md` et `README.md` en français, `README.en.md` pour la version anglaise.
 
 ## Installation
 
@@ -14,10 +18,10 @@ pip install -e ".[dev]"
 
 ```bash
 python -m personaldocagent --help
-personaldocagent init-db        # créer la base SQLite à partir du schéma
-personaldocagent charger-arbre  # charger la graine YAML de l'arbre de classification
-personaldocagent pipeline       # exécuter le pipeline d'indexation (étapes 0-7)
-personaldocagent interroger     # interroger le fonds en langage naturel
+personaldocagent init-db     # créer la base SQLite à partir du schéma
+personaldocagent load-tree   # charger la graine YAML de l'arbre de classification
+personaldocagent pipeline    # exécuter le pipeline d'indexation (étapes 0-7)
+personaldocagent query       # interroger le fonds en langage naturel
 ```
 
 ## Tests

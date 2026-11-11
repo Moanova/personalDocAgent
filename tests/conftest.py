@@ -1,10 +1,21 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : tests/conftest.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Shared pytest fixtures."""
+
 from pathlib import Path
 
 import pytest
 
-RACINE = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
-def repertoire_config() -> Path:
-    return RACINE / "config"
+def config_dir() -> Path:
+    """Configuration directory of the repository."""
+    return ROOT / "config"

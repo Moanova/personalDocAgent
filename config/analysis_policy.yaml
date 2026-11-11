@@ -1,0 +1,11 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : analysis_policy.yaml
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+max_keywords: 10
+json_naming_convention: snake_case
+auto_confidence_threshold: 0.9

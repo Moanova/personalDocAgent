@@ -1,48 +1,56 @@
-"""Contrats d'interface (dataclasses) entre les modules du pipeline."""
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : contracts.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Interface contracts (dataclasses) exchanged between the pipeline modules."""
 
 from dataclasses import dataclass, field
 
 
 @dataclass
-class ResultatAcquisition:
-    """Sortie de l'étape 0 : fichier accepté et son texte extrait (persisté dans conversion)."""
+class AcquisitionResult:
+    """Output of step 0: accepted file and its extracted text (persisted in conversion)."""
 
-    fichier_source: str
-    voie: str
-    texte: str
-    modele: str | None
-    date_conversion: str
-
-
-@dataclass
-class FicheAnalyse:
-    """Sortie de l'étape 2 agentique : décisions contraintes produites par le modèle."""
-
-    categorie_id: int
-    emetteur_candidat: str | None
-    mots_cles: list[str]
-    resume: str
-    attributs: dict
-    confiance: float
-
-    def valider(self, nb_max_mots_cles: int) -> None:
-        """Rejeter une fiche dont le nombre de mots-clés dépasse la politique d'analyse."""
-        if len(self.mots_cles) > nb_max_mots_cles:
-            raise ValueError(f"{len(self.mots_cles)} mots-clés > limite de {nb_max_mots_cles}")
+    source_file: str
+    route: str
+    text: str
+    model: str | None
+    conversion_date: str
 
 
 @dataclass
-class ResultatRapprochement:
-    """Sortie du rapprochement d'émetteur : connu, ambigu ou inconnu."""
+class AnalysisRecord:
+    """Output of the agent-driven step 2: constrained decisions produced by the model."""
 
-    statut: str
-    emetteur_id: int | None = None
-    libelle_propose: str | None = None
+    category_id: int
+    issuer_candidate: str | None
+    keywords: list[str]
+    summary: str
+    attributes: dict
+    confidence: float
+
+    def validate(self, max_keywords: int) -> None:
+        """Reject a record whose keyword count exceeds the analysis policy."""
+        if len(self.keywords) > max_keywords:
+            raise ValueError(f"{len(self.keywords)} keywords > limit of {max_keywords}")
 
 
 @dataclass
-class FicheDocument:
-    """Fiche complète assemblée avant l'étape 4 d'écriture (Dublin Core + colonnes techniques + tables filles)."""
+class IssuerMatch:
+    """Output of issuer matching: known, ambiguous or unknown."""
+
+    status: str
+    issuer_id: int | None = None
+    proposed_label: str | None = None
+
+
+@dataclass
+class DocumentRecord:
+    """Complete record assembled before the step 4 write (Dublin Core + technical columns + child tables)."""
 
     dc_title: str | None = None
     dc_date: str | None = None
@@ -51,36 +59,36 @@ class FicheDocument:
     dc_identifier: str | None = None
     dc_language: str | None = None
     dc_rights: str | None = None
-    fichier_source: str = ""
-    date_ajout: str = ""
-    statut: str = "actif"
+    source_file: str = ""
+    date_added: str = ""
+    status: str = "active"
     reference: str | None = None
-    attributs: str = "{}"
+    attributes: str = "{}"
     agents: list[tuple[str, str]] = field(default_factory=list)
-    sujets: list[str] = field(default_factory=list)
+    subjects: list[str] = field(default_factory=list)
     descriptions: list[str] = field(default_factory=list)
-    emetteur_id: int | None = None
+    issuer_id: int | None = None
     categories: list[tuple[int, bool]] = field(default_factory=list)
-    confiance: float = 0.0
+    confidence: float = 0.0
 
 
 @dataclass
-class ResultatEcriture:
-    """Sortie de l'étape 4 : document écrit en base ou non."""
+class WriteResult:
+    """Output of step 4: whether the document was written to the database."""
 
     doc_id: int
-    ecrit: bool
-    raison: str | None = None
+    written: bool
+    reason: str | None = None
 
 
 @dataclass
-class FiltresRecherche:
-    """Filtres de l'outil rechercher_documents (mode interrogation, lecture seule)."""
+class SearchFilters:
+    """Filters of the search_documents tool (query mode, read-only)."""
 
-    categorie_id: int | None = None
-    emetteur_id: int | None = None
-    date_debut: str | None = None
-    date_fin: str | None = None
+    category_id: int | None = None
+    issuer_id: int | None = None
+    date_from: str | None = None
+    date_to: str | None = None
     dc_type: str | None = None
-    statut: str | None = None
-    mot_cle: str | None = None
+    status: str | None = None
+    keyword: str | None = None

@@ -1,3 +1,13 @@
+# -------------------------------------------------------------------
+# Application  : personalDocAgent
+# Script       : tests/integration/test_structure.py
+# Version      : 0.1.0
+# Date         : 2026-11-11
+# Design       : TSC + Mistral Vibe
+# Build        : Mistral Vibe
+# -------------------------------------------------------------------
+"""Integration test: every skeleton module is importable and the module entry point answers --help."""
+
 import importlib
 import subprocess
 import sys
@@ -7,29 +17,29 @@ MODULES = [
     "personaldocagent.cli",
     "personaldocagent.config",
     "personaldocagent.contracts",
-    "personaldocagent.perimetre",
-    "personaldocagent.routage",
+    "personaldocagent.perimeter",
+    "personaldocagent.routing",
     "personaldocagent.classification",
     "personaldocagent.pipeline",
-    "personaldocagent.analyse",
-    "personaldocagent.emetteurs",
+    "personaldocagent.analysis",
+    "personaldocagent.issuers",
     "personaldocagent.db",
-    "personaldocagent.db.connexion",
+    "personaldocagent.db.connection",
     "personaldocagent.acquisition",
-    "personaldocagent.acquisition.lecture_directe",
+    "personaldocagent.acquisition.direct_read",
     "personaldocagent.acquisition.ocr",
     "personaldocagent.interrogation",
-    "personaldocagent.interrogation.outils",
+    "personaldocagent.interrogation.tools",
     "personaldocagent.interrogation.agent",
 ]
 
 
-def test_tous_les_modules_du_squelette_sont_importables():
+def test_all_skeleton_modules_are_importable():
     for module in MODULES:
         importlib.import_module(module)
 
 
-def test_point_entree_module_repond_au_help():
+def test_module_entry_point_answers_help():
     result = subprocess.run(
         [sys.executable, "-m", "personaldocagent", "--help"],
         capture_output=True,
