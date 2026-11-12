@@ -223,3 +223,24 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Re-test utilisateur (petit corpus, base neuve) ; puis **T5.1-T5.3** (EPIC E5).
+
+---
+
+## 2026-11-12 — Séance 10-11 : run réel validé (6 PDF) + correctif chunks thinking + config locale non versionnée + plans détaillés E5
+
+### Actions réalisées
+- **Correctif chunks thinking poussé par l'utilisateur** (commit `f6d0a48`, après que mon commit local a735e9a a été annulé à sa demande) : `_content_to_str` ignore les chunks `thinking`/`reasoning` (ThinkChunk sans `.text`), `_extract_json` extrait le premier bloc `{...}` en secours.
+- **Run réel validé** : `pipeline --analyze` sur 6 PDF → `6 acquired / 6 written / 6 analyzed` (étapes 0-2 OK de bout en bout, voie OCR comprise).
+- **Config locale non versionnée** (commit utilisateur `d9ec6ab`) : `config/perimeter_access.yaml` retiré du dépôt (`.gitignore` ligne 12) et remplacé par le template `config/perimeter_access.yaml.exemple`. Bac à sable resynchronisé (`HEAD` = `d9ec6ab`) ; fichier local recréé depuis le template ; **99 tests passent**. Note retenue : `load_config()` exige le fichier local (copier depuis `.exemple`) ; faire pointer le `FileNotFoundError` vers le template (à formaliser).
+- **Plans détaillés E5** établis : `docs/tasks/T5.1_match_issuer.md`, `T5.2_create_resolve_issuer.md`, `T5.3_branchement_pipeline.md`.
+
+### Décisions clés
+- Matching émetteur en Python sur labels normalisés (`casefold`) plutôt que LIKE SQL (échappement, casse ASCII-only) — référentiel de taille modeste.
+- `ambiguous` laissé en attente (arbitrage ultérieur, E6) ; création d'émetteur auto uniquement si confiance ≥ `auto_confidence_threshold`.
+- T5.3 : `analyze_base(..., with_issuers=True)` en une seule passe (pas d'appel API supplémentaire), `UPDATE document.issuer_id` si `known`, rapport CLI depuis la base.
+
+### Blocages
+- Push depuis le bac à sable toujours bloqué (token `GH_TOKEN` invalide → 502 GitHub) ; l'utilisateur pousse depuis son poste. Les commits locaux de cette séance sont en attente de push.
+
+### Prochaine séance
+- Implémentation de T5.1-T5.3 selon les plans ; `python -m pytest` ; commit (par l'utilisateur si le token sandbox reste invalide).
