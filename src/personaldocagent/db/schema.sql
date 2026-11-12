@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS document (
     date_added TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'to_archive', 'to_destroy')),
     reference TEXT,
-    attributes TEXT
+    attributes TEXT,
+    confidence REAL
 );
 
 CREATE TABLE IF NOT EXISTS document_agent (

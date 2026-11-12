@@ -91,11 +91,9 @@ Persister les `AnalysisRecord` de l'étape 2 dans la fiche complète du document
 # Tableau du kanban
 
 ## À faire
-T6.2
-T6.3
+
 
 ## En cours
-T6.1
 
 
 ## En revue
@@ -108,6 +106,9 @@ T4.3
 T5.1
 T5.2
 T5.3
+T6.1
+T6.2
+T6.3
 
 
 ## Terminé

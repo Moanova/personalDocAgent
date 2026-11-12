@@ -1,8 +1,8 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : db/connection.py
-# Version      : 0.1.0
-# Date         : 2026-11-11
+# Version      : 0.2.0
+# Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
@@ -23,12 +23,15 @@ def connect(db_path: Path) -> sqlite3.Connection:
 
 
 def init_db(db_path: Path) -> None:
-    """Create the database from db/schema.sql (idempotent thanks to IF NOT EXISTS)."""
+    """Create the database from db/schema.sql (idempotent) and migrate older schemas (added columns)."""
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = connect(db_path)
     try:
         conn.executescript(SCHEMA.read_text(encoding="utf-8"))
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(document)").fetchall()}
+        if "confidence" not in columns:
+            conn.execute("ALTER TABLE document ADD COLUMN confidence REAL")
         conn.commit()
     finally:
         conn.close()

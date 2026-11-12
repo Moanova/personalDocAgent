@@ -1,13 +1,14 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : pipeline.py
-# Version      : 0.5.0
+# Version      : 0.6.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
 """Deterministic orchestration of the pipeline (steps 0-2: acquisition, persistence, analysis)."""
 
+import json
 import sqlite3
 import sys
 from collections.abc import Callable
@@ -19,7 +20,7 @@ from .acquisition import ocr
 from .acquisition.direct_read import read_direct
 from .analysis import analyze
 from .classification import export_flat, load_tree
-from .config import Config, load_config
+from .config import AnalysisPolicy, Config, load_config
 from .contracts import AcquisitionResult, AnalysisRecord, WriteResult
 from .db.connection import connect, init_db
 from .issuers import match_issuer, resolve_issuer
@@ -140,13 +141,90 @@ def run_step0(config_dir: Path, base: Path) -> list[AcquisitionResult]:
     return results
 
 
+def write_record(conn: sqlite3.Connection, doc_id: int, record: AnalysisRecord) -> WriteResult:
+    """Step 4: write the full record of an analyzed document (idempotent child rows)."""
+    row = conn.execute(
+        "SELECT source_file, dc_title FROM document WHERE doc_id = ?", (doc_id,)
+    ).fetchone()
+    if row is None:
+        return WriteResult(doc_id=doc_id, written=False, reason="missing_document")
+    title = row["dc_title"] or Path(row["source_file"]).stem
+    conn.execute(
+        "UPDATE document SET dc_title = ?, attributes = ?, confidence = ? WHERE doc_id = ?",
+        (title, json.dumps(record.attributes, ensure_ascii=False), record.confidence, doc_id),
+    )
+    for keyword in record.keywords:
+        conn.execute(
+            "INSERT OR IGNORE INTO document_subject (doc_id, value) VALUES (?, ?)",
+            (doc_id, keyword),
+        )
+    conn.execute(
+        "INSERT OR IGNORE INTO document_description (doc_id, value) VALUES (?, ?)",
+        (doc_id, record.summary),
+    )
+    conn.execute(
+        "INSERT OR IGNORE INTO document_category (doc_id, category_id, is_primary, classification_date)"
+        " VALUES (?, ?, 1, ?)",
+        (doc_id, record.category_id, datetime.now(timezone.utc).isoformat()),
+    )
+    conn.commit()
+    return WriteResult(doc_id=doc_id, written=True)
+
+
+def quality_report(conn: sqlite3.Connection, policy: AnalysisPolicy) -> dict:
+    """Control step: counts by status, primary category, pending issuers, low-confidence documents."""
+    total = conn.execute("SELECT COUNT(*) FROM document").fetchone()[0]
+    by_status = {
+        row[0]: row[1]
+        for row in conn.execute("SELECT status, COUNT(*) FROM document GROUP BY status").fetchall()
+    }
+    by_category = {
+        row[0]: row[1]
+        for row in conn.execute(
+            """
+            SELECT c.label, COUNT(*) FROM document_category dc
+            JOIN category c ON c.category_id = dc.category_id
+            WHERE dc.is_primary = 1 GROUP BY c.label ORDER BY c.label
+            """
+        ).fetchall()
+    }
+    pending_issuers = conn.execute(
+        "SELECT COUNT(*) FROM document WHERE issuer_id IS NULL"
+    ).fetchone()[0]
+    low_confidence = conn.execute(
+        "SELECT COUNT(*) FROM document WHERE confidence IS NOT NULL AND confidence < ?",
+        (policy.auto_confidence_threshold,),
+    ).fetchone()[0]
+    return {
+        "documents": total,
+        "by_status": by_status,
+        "by_category": by_category,
+        "pending_issuers": pending_issuers,
+        "low_confidence": low_confidence,
+    }
+
+
+def pending_review(conn: sqlite3.Connection, policy: AnalysisPolicy) -> list[int]:
+    """Targeted rework: doc_ids with unknown issuer or confidence below the threshold."""
+    rows = conn.execute(
+        """
+        SELECT doc_id FROM document
+        WHERE issuer_id IS NULL OR (confidence IS NOT NULL AND confidence < ?)
+        ORDER BY doc_id
+        """,
+        (policy.auto_confidence_threshold,),
+    ).fetchall()
+    return [row[0] for row in rows]
+
+
 def analyze_base(
-    config_dir: Path, base: Path, client=None, with_issuers: bool = False
+    config_dir: Path, base: Path, client=None, with_issuers: bool = False, persist: bool = False
 ) -> list[AnalysisRecord]:
     """Step 2: analyze every persisted document text (first chunk) into AnalysisRecords.
 
     With with_issuers=True, also resolve the issuer of each record (match + confidence rule)
-    and set document.issuer_id when known.
+    and set document.issuer_id when known. With persist=True, also write the full record
+    (step 4) via write_record in the same pass.
     """
     config = load_config(Path(config_dir))
     init_db(base)
@@ -181,6 +259,8 @@ def analyze_base(
                             (resolved.issuer_id, row["doc_id"]),
                         )
                         conn.commit()
+                if persist:
+                    write_record(conn, row["doc_id"], record)
                 records.append(record)
             except ValueError as exc:
                 print(f"Step 2 analysis: doc_id={row['doc_id']} skipped ({exc})", file=sys.stderr)

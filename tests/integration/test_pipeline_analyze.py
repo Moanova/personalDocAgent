@@ -122,7 +122,7 @@ def test_cli_pipeline_analyze_flag(tmp_path, monkeypatch, capsys):
     fake_records = [object(), object()]
     monkeypatch.setattr(
         "personaldocagent.pipeline.analyze_base",
-        lambda config_dir, db, client=None, with_issuers=False: fake_records,
+        lambda config_dir, db, client=None, with_issuers=False, persist=False: fake_records,
     )
     rc = main(["--config", str(cfg), "--base", str(base), "pipeline", "--analyze"])
     assert rc == 0

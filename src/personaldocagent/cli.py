@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.5.0
+# Version      : 0.6.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -76,9 +76,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Step 1 persistence: {written} written, {duplicates} duplicate(s)")
         print(f"Rejections journalled in {DEFAULT_REJECTION_LOG}")
         if args.analyze:
-            records = analyze_base(args.config, args.base, with_issuers=True)
+            records = analyze_base(args.config, args.base, with_issuers=True, persist=True)
             print(f"Step 2 analysis: {len(records)} analyzed")
+            from .config import load_config
             from .db.connection import connect
+            from .pipeline import quality_report
 
             conn = connect(args.base)
             try:
@@ -88,9 +90,15 @@ def main(argv: list[str] | None = None) -> int:
                 pending = conn.execute(
                     "SELECT COUNT(*) FROM document WHERE issuer_id IS NULL"
                 ).fetchone()[0]
+                report = quality_report(conn, load_config(args.config).policy)
             finally:
                 conn.close()
             print(f"Issuers: {known} known, {pending} pending")
+            print(
+                f"Quality: {report['documents']} document(s), "
+                f"{report['pending_issuers']} pending issuer(s), "
+                f"{report['low_confidence']} low-confidence"
+            )
         return 0
 
     raise NotImplementedError(

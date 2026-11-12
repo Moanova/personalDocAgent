@@ -279,3 +279,19 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Implémentation T6.1-T6.3 ; `python -m pytest` (attendu : 105 + nouveaux) ; commit/push ; puis **EPIC E7** (mode interrogation : 4 outils lecture seule + FTS5 + CLI `query`).
+
+---
+
+## 2026-11-12 — Séance 14 : implémentation EPIC E6 (écriture complète étape 4 + contrôle qualité)
+
+### Actions réalisées
+- **T6.1** : `db/schema.sql` + colonne `confidence REAL` sur `document` ; `db/connection.py` v0.2.0 — migration idempotente (PRAGMA + ALTER) ; `pipeline.py` v0.6.0 — `write_record()` (dc_title repli = stem, attributes JSON, confidence, INSERT OR IGNORE subject/description/category is_primary=1). TU-42 à TU-44 (TU-44 : migration testée via DROP COLUMN puis re-init).
+- **T6.2** : `analyze_base(..., persist=True)` → `write_record` dans la même passe (0 appel API en plus) ; CLI `--analyze` → `persist=True`. TI-08 : fiches complètes, 2e run sans doublon.
+- **T6.3** : `quality_report()` (totaux, par statut/catégorie, pending issuers, low-confidence) + `pending_review()` ; CLI : ligne « Quality: ... ». TU-45 + TI-08 (rapport CLI vérifié).
+- **Validation agent (étape 5)** : `python -m pytest` → **110 tests passent** (105 + 5 nouveaux) ; T6.1-T6.3 « En revue » dans le kanban. Commit + push sur `dev`.
+
+### Blocages
+- Aucun (le blocage Miro sur l'édition de lignes kanban reste contourné : kanban.md = source de vérité).
+
+### Prochaine séance
+- Validation utilisateur T3-T6 ; **EPIC E7** : mode interrogation — `interrogation/tools.py` (4 outils lecture seule : search_documents, search_fulltext FTS5, read_document, aggregate), `interrogation/agent.py` (chat.complete + function calling, historique local), CLI `query`.
