@@ -131,3 +131,28 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 ### Prochaine séance
 - Validation utilisateur de T3.1-T3.3 (« Terminé » + Miro « Fait » si validé).
 - **EPIC E4** : étape 2 agentique (`analysis.py` + prompts, catégorie contrainte via l'arbre, mots-clés, résumé, émetteur candidat, `attributes` JSON ; `chat.completions` mocké en test).
+
+---
+
+## 2026-11-12 — Séance 6 : définition de l'EPIC E4 (étape 2 agentique)
+
+### Actions réalisées
+- **EPIC E4** enregistrée dans `docs/projet/kanban.md` : étape 2 agentique — analyse de contenu par complétion Mistral, contrat `AnalysisRecord` validé : catégorie contrainte dans l'arbre (export aplati `export_flat`), émetteur candidat, mots-clés plafonnés (`analysis_policy.yaml`), résumé, `attributes` JSON `snake_case`, confiance ∈ [0,1]. Tâches : **T4.1** prompts versionnés + `analyze()` (« En cours »), **T4.2** contexte arbre + mapping label→`category_id`, **T4.3** `pipeline --analyze` + TI (« À faire »).
+- **Plan de tests** : TU-28 à TU-33 + TI-06 ajoutés dans `tests/plan_tests.md` (`tests/unit/test_analysis.py`, `tests/integration/test_pipeline_analyze.py`).
+- Squelettes vérifiés compatibles : `analysis.analyze(text, categories, policy) -> AnalysisRecord`, `classification.export_flat(conn)` (format `id: label` indenté), `prompts/` (vide, `.gitkeep`).
+- **Plans détaillés T4.1-T4.3** établis : `docs/tasks/T4.1_prompts_et_analyze.md` (prompts versionnés `prompts/analysis.py` + `analyze(..., client=None)` avec validations), `T4.2_contexte_arbre.md` (`category_ids_from_export`, `is_active_category`, contexte prompt), `T4.3_pipeline_analyze.md` (`analyze_base` sur textes persistés, 1er segment via `chunk_text`, CLI `pipeline --analyze`, TI-06).
+- Choix acté : le modèle renvoie le `category_id` (int) contraint aux ids de l'export aplati — validation déterministe, pas de mapping label ambigu (kanban T4.2 corrigé en conséquence).
+- **EPIC E4 implémentée** : `prompts/analysis.py` (prompts versionnés, anglais) ; `analysis.py` v0.2.0 — `_client()` paresseux mémoïsé (`lru_cache`), `analyze(text, categories, policy, client=None)` (`chat.completions`, `response_format=json_object`, parsing + validations : category_id ∈ export, keywords ≤ max, clés snake_case, confiance [0,1]), helpers `category_ids_from_export` / `is_active_category` (T4.2) ; `pipeline.py` v0.4.0 — `analyze_base()` (arbre chargé si vide, conversion la plus récente par document, 1er segment `chunk_text`) ; `cli.py` v0.4.0 — `pipeline --analyze`.
+- **Tests E4** : `tests/unit/test_analysis.py` (TU-28 à TU-33 + helpers) + `tests/integration/test_pipeline_analyze.py` (TI-06 x2 : `analyze_base` client fake, flag CLI monkeypatché) — zéro appel réseau.
+- **Validation agent (étape 5)** : `python -m pytest` → **96 tests passent** (87 + 9 nouveaux) ; T4.1-T4.3 « En revue » (kanban + board Miro). Commit + push sur `dev` (demandé explicitement).
+
+### Décisions clés
+- `analyze(text, categories, policy, client=None)` : client Mistral paresseux (`MISTRAL_API_KEY`) et injectable — tests 100 % hors ligne.
+- Choix de catégorie contraint aux entrées existantes de l'arbre ; label inconnu → `ValueError`. Rapprochement émetteur et écriture des tables filles réservés à E5/E6.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur de T3.1-T3.3 et T4.1-T4.3 (« Terminé » + Miro « Fait » si validé).
+- **EPIC E5** : rapprochement émetteur (`issuers.py`) — recherche SQL exacte puis approximative (LIKE), statuts connu / ambigu / inconnu, file d'attente ; puis **E6** écriture complète étape 4 (tables filles) et **E7** mode interrogation (4 outils + CLI `query`).

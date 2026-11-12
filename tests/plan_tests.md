@@ -54,3 +54,13 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 | TU-26 | T3.2 | 2e `run` : doublons rejetés à l'étape 0 (`duplicate` journalisé, rien acquis), base inchangée | `tests/unit/test_run_persist.py` |
 | TU-27 | T3.2 | CLI `pipeline` : rapport acquis/écrits, rc 0, base remplie | `tests/unit/test_cli_pipeline.py` |
 | TI-05 | T3.3 | Bout en bout : corpus tmp (txt, html, `.xyz`, `.docx` corrompu) → 2 écrits, FTS OK, rejets journalisés, 2e run idempotent (doublons rejetés à l'étape 0) | `tests/integration/test_pipeline_persist.py` |
+
+| ID | Tâche | Description | Fichier de test |
+|---|---|---|---|
+| TU-28 | T4.1 | `analyze` avec client mocké, JSON valide → `AnalysisRecord` complet (catégorie résolue, champs remplis) | `tests/unit/test_analysis.py` |
+| TU-29 | T4.1 | `keywords` > `policy.max_keywords` → `ValueError` (`AnalysisRecord.validate`) | `tests/unit/test_analysis.py` |
+| TU-30 | T4.2 | catégorie absente de l'arbre → `ValueError` (choix contraint) | `tests/unit/test_analysis.py` |
+| TU-31 | T4.1 | clé d'`attributes` non `snake_case` → `ValueError` | `tests/unit/test_analysis.py` |
+| TU-32 | T4.2 | le prompt transmis contient l'export aplati de l'arbre + `max_keywords` + convention (appel mocké inspecté) | `tests/unit/test_analysis.py` |
+| TU-33 | T4.1 | confiance hors [0,1] ou réponse JSON invalide → `ValueError` | `tests/unit/test_analysis.py` |
+| TI-06 | T4.3 | `pipeline --analyze` de bout en bout : corpus tmp + client fake → un `AnalysisRecord` par document persisté | `tests/integration/test_pipeline_analyze.py` |

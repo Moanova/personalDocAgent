@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : pipeline.py
-# Version      : 0.3.0
+# Version      : 0.4.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -16,8 +16,10 @@ from pathlib import Path
 
 from .acquisition import ocr
 from .acquisition.direct_read import read_direct
+from .analysis import analyze
+from .classification import export_flat, load_tree
 from .config import Config, load_config
-from .contracts import AcquisitionResult, WriteResult
+from .contracts import AcquisitionResult, AnalysisRecord, WriteResult
 from .db.connection import connect, init_db
 from .perimeter import DEFAULT_REJECTION_LOG, iter_allowed_files, log_rejection
 from .routing import run_step0_checks
@@ -134,6 +136,34 @@ def run_step0(config_dir: Path, base: Path) -> list[AcquisitionResult]:
     finally:
         conn.close()
     return results
+
+
+def analyze_base(config_dir: Path, base: Path, client=None) -> list[AnalysisRecord]:
+    """Step 2: analyze every persisted document text (first chunk) into AnalysisRecords."""
+    config = load_config(Path(config_dir))
+    init_db(base)
+    conn = connect(base)
+    try:
+        if conn.execute("SELECT COUNT(*) FROM category").fetchone()[0] == 0:
+            load_tree(conn, Path(config_dir) / "classification.yaml")
+        categories = export_flat(conn)
+        rows = conn.execute(
+            """
+            SELECT d.doc_id, c.extracted_text FROM document d
+            JOIN conversion c ON c.doc_id = d.doc_id
+            WHERE c.conversion_date = (
+                SELECT MAX(conversion_date) FROM conversion WHERE doc_id = d.doc_id
+            )
+            ORDER BY d.doc_id
+            """
+        ).fetchall()
+        records = []
+        for row in rows:
+            segments = chunk_text(row["extracted_text"])
+            records.append(analyze(segments[0] if segments else "", categories, config.policy, client))
+    finally:
+        conn.close()
+    return records
 
 
 def run(config_dir: Path, base: Path) -> list[WriteResult]:

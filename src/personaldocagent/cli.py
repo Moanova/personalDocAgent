@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.3.0
+# Version      : 0.4.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -33,7 +33,14 @@ def main(argv: list[str] | None = None) -> int:
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("init-db", help="Create the SQLite database from the schema (T1.2).")
     subcommands.add_parser("load-tree", help="Load the YAML seed of the classification tree (T1.3).")
-    subcommands.add_parser("pipeline", help="Run the indexing pipeline (step 0 acquisition for now).")
+    pipeline_parser = subcommands.add_parser(
+        "pipeline", help="Run the indexing pipeline (steps 0-1; add --analyze for step 2)."
+    )
+    pipeline_parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Also run step 2 (agent-driven content analysis) on the persisted texts.",
+    )
     subcommands.add_parser("query", help="Query the collection in natural language.")
 
     args = parser.parse_args(argv)
@@ -60,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "pipeline":
         from .perimeter import DEFAULT_REJECTION_LOG
-        from .pipeline import run
+        from .pipeline import analyze_base, run
 
         results = run(args.config, args.base)
         written = sum(1 for r in results if r.written)
@@ -68,6 +75,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Step 0 acquisition: {len(results)} document(s) acquired")
         print(f"Step 1 persistence: {written} written, {duplicates} duplicate(s)")
         print(f"Rejections journalled in {DEFAULT_REJECTION_LOG}")
+        if args.analyze:
+            records = analyze_base(args.config, args.base)
+            print(f"Step 2 analysis: {len(records)} analyzed")
         return 0
 
     raise NotImplementedError(

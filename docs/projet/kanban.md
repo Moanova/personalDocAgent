@@ -52,6 +52,18 @@ Première brique du pipeline (cf. `docs/conception/conception.md` §4 et §5, `m
 
 ---
 
+## E4 — Étape 2 agentique : analyse de contenu
+Pour chaque texte persisté dans `conversion`, produire via une complétion Mistral (`chat.completions`, prompts versionnés dans `prompts/`) une fiche d'analyse validée (contrat `AnalysisRecord`) : catégorie choisie **parmi les entrées existantes de l'arbre** (export aplati `classification.export_flat` fourni dans le contexte, cf. `conception.md` §4), émetteur candidat, mots-clés plafonnés par `analysis_policy.yaml`, résumé, attributs JSON en `snake_case`, score de confiance. Le rapprochement émetteur et l'écriture complète des tables filles relèvent des EPIC E5/E6.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T4.1 | Prompts versionnés + `analyze()` dans `analysis.py` (appel Mistral injectable, parsing JSON, validations) | T1.3, T1.5 |
+| T4.2 | Contexte arbre (export aplati `id: label` + politique dans le prompt) et validation de `category_id` parmi les ids fournis | T1.3, T4.1 |
+| T4.3 | Branchement `pipeline --analyze` (étapes 0-2, `analyze_base` sur les textes en base) + tests d'intégration | T3.2, T4.1, T4.2 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
@@ -64,6 +76,9 @@ Première brique du pipeline (cf. `docs/conception/conception.md` §4 et §5, `m
 T3.1
 T3.2
 T3.3
+T4.1
+T4.2
+T4.3
 
 
 ## Terminé
@@ -195,3 +210,21 @@ T2.4
 - **Livrables** : `tests/integration/test_pipeline_persist.py` — TI-05 : corpus tmp (txt, html, `.xyz`, `.docx` corrompu) → 2 documents écrits, `conversion` + FTS5 interrogeables, rejets journalisés (`unsupported_format`, `conversion_failed`), 2e run idempotent (0 écrit).
 - **Critères d'acceptation** : TI-05 passe, `python -m pytest` vert, E3 déplacée « En revue ».
 - **Dépendances** : T3.1, T3.2.
+
+## T4.1 — Prompts versionnés + `analyze()` (parsing/validation)
+- **Objectif** : produire une fiche d'analyse validée à partir d'un texte extrait, via une complétion Mistral (cf. `conception.md` §6 : agents éphémères, prompts versionnés dans le code).
+- **Livrables** : `prompts/` (prompt système + template utilisateur, versionnés, en anglais) ; `analysis.py` — `analyze(text, categories, policy, client=None) -> AnalysisRecord` : client Mistral paresseux (`MISTRAL_API_KEY`, injectable pour les tests), appel `chat.completions` avec réponse JSON exigée, parsing + validations déterministes : catégorie présente dans l'arbre, `len(keywords) <= policy.max_keywords` (`AnalysisRecord.validate`), clés d'`attributes` en `snake_case` (`policy.json_naming_convention`), `0 <= confidence <= 1` ; toute violation → `ValueError`.
+- **Critères d'acceptation** : TU-28 à TU-33 (client mocké, zéro appel réseau).
+- **Dépendances** : T1.3, T1.5.
+
+## T4.2 — Contexte arbre + validation de `category_id`
+- **Objectif** : contraindre le choix de catégorie aux entrées existantes de l'arbre (« choix contraint parmi les entrées existantes, fournies dans le contexte », `conception.md` §4). L'export aplati `export_flat` est au format `id: label` indenté : le modèle renvoie le `category_id`, validé contre les ids fournis.
+- **Livrables** : construction du prompt avec `classification.export_flat(conn)` + politique (`max_keywords`, `json_naming_convention`) ; parsing des ids de l'export (`category_ids_from_export`) ; id inconnu → rejet `ValueError` ; vérification `active=1` en base.
+- **Critères d'acceptation** : TU-30, TU-32 (le prompt transmis contient bien l'arbre aplati et la politique).
+- **Dépendances** : T1.3, T4.1.
+
+## T4.3 — Branchement `pipeline --analyze` + tests d'intégration
+- **Objectif** : enchaîner l'analyse (étape 2) après la persistance (étapes 0-1), sur les textes déjà en base.
+- **Livrables** : `pipeline.py` — `analyze_base(config_dir, base, client=None) -> list[AnalysisRecord]` (jointure `document`/`conversion`, texte découpé via `chunk_text` si long, `analyze` par document) ; `cli.py` — option `--analyze` sur la sous-commande `pipeline` (rapport : N analysés).
+- **Critères d'acceptation** : TI-06 ; `pipeline --analyze` sur corpus tmp avec client fake.
+- **Dépendances** : T3.2, T4.1, T4.2.
