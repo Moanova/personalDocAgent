@@ -6,6 +6,6 @@
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
-allowed_roots: []
+allowed_roots: ['C:\Users\thoma\OneDrive\Documents\02-Affaires\02-Santé\Mutuelle']
 exclusions: []
 follow_symlinks: false

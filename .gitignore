@@ -9,6 +9,7 @@ env/
 .env*.local
 *.env
 *.env.*
+config/perimeter_access.yaml
 # Fichiers de données (stockage local)
 data/
 # Fichiers de logs
@@ -45,4 +46,6 @@ dist/
 # Fichiers spécifiques à Python
 __pypackages__/
 .mypy_cache/
-# Fichiers de brouillon ou temporaires
+# Fichiers de tests complémentaires
+test.py
+tests/inspect_acquisition.py

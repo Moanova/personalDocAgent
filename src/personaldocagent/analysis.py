@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : analysis.py
-# Version      : 0.2.2
+# Version      : 0.2.3
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -79,8 +79,15 @@ def _parse_record(payload: dict, categories: str, policy: AnalysisPolicy) -> Ana
     return record
 
 
+_JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
+_SKIP_CHUNK_TYPES = ("thinking", "reasoning")
+
+
 def _content_to_str(content) -> str:
-    """Normalize a message content to plain text: str as-is, list of chunks (str/dict/TextChunk) joined."""
+    """Normalize message content to plain text: str as-is; chunk list joined over text chunks only.
+
+    Thinking/reasoning chunks (ThinkChunk, type='thinking') carry no .text and are skipped.
+    """
     if isinstance(content, str):
         return content
     parts = []
@@ -88,10 +95,27 @@ def _content_to_str(content) -> str:
         if isinstance(chunk, str):
             parts.append(chunk)
         elif isinstance(chunk, dict):
+            if chunk.get("type") in _SKIP_CHUNK_TYPES:
+                continue
             parts.append(str(chunk.get("text", "")))
         else:
-            parts.append(str(getattr(chunk, "text", chunk)))
+            if getattr(chunk, "type", None) in _SKIP_CHUNK_TYPES:
+                continue
+            text = getattr(chunk, "text", None)
+            if text is not None:
+                parts.append(str(text))
     return "".join(parts)
+
+
+def _extract_json(raw: str):
+    """Parse raw text as JSON; fallback: the first {...} block (model may wrap JSON in prose)."""
+    try:
+        return json.loads(raw)
+    except (TypeError, ValueError):
+        match = _JSON_BLOCK.search(raw)
+        if match:
+            return json.loads(match.group(0))
+        raise
 
 
 def analyze(text: str, categories: str, policy: AnalysisPolicy, client=None) -> AnalysisRecord:
@@ -112,7 +136,7 @@ def analyze(text: str, categories: str, policy: AnalysisPolicy, client=None) -> 
         raise ValueError(f"Analysis completion failed: {exc}") from exc
     raw = _content_to_str(response.choices[0].message.content)
     try:
-        payload = json.loads(raw)
+        payload = _extract_json(raw)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             f"Analysis completion failed: invalid JSON ({exc}); content preview: {raw[:200]!r}"
