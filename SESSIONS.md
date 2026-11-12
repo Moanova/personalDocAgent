@@ -87,3 +87,21 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 ### Prochaine séance
 - Relancer `python -m pytest -q` sur le poste Windows (attendu : 78 passed) et le plan de test manuel.
 - **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion`, tables filles).
+
+---
+
+## 2026-11-12 — Séance 4 : correctif glob `**/` en tête de motif
+
+### Actions réalisées
+- **Cause** : un motif commençant par `**/` ne matchait pas le `/` initial des chemins absolus POSIX (la regex `(?:[^/]+/)*` ne peut pas consommer un `/` de tête) — fonctionne par accident sous Windows (lettre de lecteur).
+- **Correctif** `perimeter.py` v0.3.0 : `**/` initial traduit en `/?(?:[^/]+/)*` (autorise le `/` initial).
+- **Test de non-régression** `test_exclusion_glob_leading_double_star_matches_absolute_paths` (chemins POSIX absolus + PureWindowsPath, `**/archive/**`, `**/*.pdf`, cas négatifs).
+- **Validation** : `python -m pytest` → **79 tests passent**. Commit + push sur `dev` (demandé explicitement).
+- **Sémantique périmétrique clarifiée avec l'utilisateur** : `allowed_roots` récursif (tout le sous-arbre est autorisé) ; deny-by-default exclut le reste ; `exclusions` ne sert qu'à faire des trous dans une racine autorisée (`<dossier>\<sous-dossier>\**`) ; ne jamais mettre `C:\**` en exclusion (l'emporte sur `allowed_roots`).
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Sur le poste Windows : `git pull`, `python -m pytest -q` (attendu : 79 passed), puis test réel avec `allowed_roots` = dossiers retenus uniquement.
+- **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion` via `save_conversion`, tables filles), contrôle duplicata actif.

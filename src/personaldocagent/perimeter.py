@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : perimeter.py
-# Version      : 0.2.0
+# Version      : 0.3.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -26,11 +26,15 @@ DEFAULT_REJECTION_LOG = Path("data") / "rejections.log"
 def _glob_to_regex(pattern: str) -> re.Pattern:
     """Convert a glob pattern to a regex: ** crosses directories, * and ? stay within one segment.
 
-    Backslashes are normalized to forward slashes so Windows-style patterns match on every OS.
+    A leading **/ also matches the leading / of absolute POSIX paths. Backslashes are normalized
+    to forward slashes so Windows-style patterns match on every OS.
     """
     pattern = pattern.replace("\\", "/")
     parts = []
     i = 0
+    if pattern.startswith("**/"):
+        parts.append("/?(?:[^/]+/)*")
+        i = 3
     while i < len(pattern):
         if pattern.startswith("**/", i):
             parts.append("(?:[^/]+/)*")

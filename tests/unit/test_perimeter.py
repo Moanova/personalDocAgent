@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : tests/unit/test_perimeter.py
-# Version      : 0.2.0
+# Version      : 0.3.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -97,6 +97,18 @@ def test_exclusion_matches_windows_style_separators():
     assert _is_excluded(canonical, [r"C:\Users\moa\collection\archive\**"]) is True
     assert _is_excluded(canonical, ["C:/Users/moa/collection/*.pdf"]) is False
     assert _is_excluded(PureWindowsPath("C:/Users/moa/collection/notes.md"), ["C:/Users/moa/collection/*.md"]) is True
+
+
+def test_exclusion_glob_leading_double_star_matches_absolute_paths():
+    """Regression: a leading **/ must also match the leading / of absolute POSIX paths (and drive letters)."""
+    archived = Path("/home/moa/collection/archive/old.pdf")
+    assert _is_excluded(archived, ["**/archive/**"]) is True
+    assert _is_excluded(archived, ["**/*.pdf"]) is True
+    assert _is_excluded(Path("/home/moa/collection/notes.md"), ["**/archive/**"]) is False
+    assert _is_excluded(Path("/home/moa/collection/archive"), ["**/archive"]) is True
+    win = PureWindowsPath("C:/Users/moa/collection/archive/old.pdf")
+    assert _is_excluded(win, ["**/archive/**"]) is True
+    assert _is_excluded(PureWindowsPath("C:/Users/moa/collection/notes.md"), ["**/archive/**"]) is False
 
 
 def test_log_rejection_writes_timestamped_line(tree, tmp_path):
