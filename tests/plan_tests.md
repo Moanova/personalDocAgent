@@ -72,3 +72,11 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 | TU-35 | T5.1 | LIKE approximatif à 1 hit → `known` ; TU-36 : plusieurs hits → `ambiguous` (`proposed_label`) ; TU-37 : 0 hit → `unknown` | `tests/unit/test_issuers.py` |
 | TU-38 | T5.2 | `resolve_issuer` : confiance ≥ seuil → création auto (`known`) ; < seuil → `unknown` (file d'attente) ; `create_issuer` idempotent | `tests/unit/test_issuers.py` |
 | TI-07 | T5.3 | Bout en bout : émetteur connu → `document.issuer_id` renseigné ; candidat inconnu + confiance faible → `issuer_id` NULL | `tests/integration/test_pipeline_issuers.py` |
+
+| ID | Tâche | Description | Fichier de test |
+|---|---|---|---|
+| TU-42 | T6.1 | `write_record` : `attributes` JSON + `confidence` + `dc_title` (repli nom de fichier) + lignes filles subject/description/category (`is_primary=1`) | `tests/unit/test_write_record.py` |
+| TU-43 | T6.1 | Idempotence : 2e `write_record` sur le même record → aucune ligne fille dupliquée | `tests/unit/test_write_record.py` |
+| TU-44 | T6.1 | Migration : `init_db` ajoute la colonne `confidence` sur une base existante (PRAGMA) | `tests/unit/test_write_record.py` |
+| TU-45 | T6.3 | `quality_report` / `pending_review` : totaux, par statut/catégorie, émetteurs en attente, confiance < seuil | `tests/unit/test_write_record.py` |
+| TI-08 | T6.2/T6.3 | Bout en bout : `analyze_base(persist=True, with_issuers=True)` → fiches complètes en base, 2e run sans doublon, rapport CLI « Quality: » | `tests/integration/test_pipeline_write.py` |

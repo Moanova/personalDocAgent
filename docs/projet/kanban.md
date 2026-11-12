@@ -76,12 +76,26 @@ Rapprocher l'`issuer_candidate` produit par l'étape 2 (E4) au référentiel `is
 
 ---
 
+## E6 — Étape 4 : écriture complète, persistance de l'analyse, contrôle qualité
+Persister les `AnalysisRecord` de l'étape 2 dans la fiche complète du document (cf. `conception.md` §4 « Écriture », contrat `DocumentRecord` T1.5) : `attributes` JSON + `confidence` (nouvelle colonne) + `dc_title` (repli = nom de fichier), tables filles `document_subject` / `document_description` / `document_category` (insertion idempotente). Puis reprise ciblée (confiance < seuil ou émetteur en attente) et contrôle qualité (statistiques). La colonne `confidence` est ajoutée au schéma avec migration idempotente.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T6.1 | `write_record()` (étape 4) + colonne `confidence` (schéma + migration idempotente) | T1.2, T1.5, T3.1, T4.1 |
+| T6.2 | Persistance de l'analyse dans le pipeline : `analyze_base(..., persist=True)` + CLI `--analyze` | T4.3, T5.3, T6.1 |
+| T6.3 | Reprise ciblée + contrôle qualité : `quality_report()`, `pending_review()` + rapport CLI + TI | T6.2 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
-
+T6.2
+T6.3
 
 ## En cours
+T6.1
 
 
 ## En revue
@@ -261,3 +275,21 @@ T2.4
 - **Livrables** : `pipeline.py` — après `analyze_base`, pour chaque couple (doc_id, AnalysisRecord) : `match_issuer` + `resolve_issuer` (confiance du record, policy) + `UPDATE document SET issuer_id` si `known` ; `cli.py` — rapport « issuers: K known, C created, P pending » ; tests TI-07.
 - **Critères d'acceptation** : TI-07 (émetteur connu renseigné, inconnu en attente avec `issuer_id` NULL).
 - **Dépendances** : T4.3, T5.1, T5.2.
+
+## T6.1 — `write_record()` (étape 4) + colonne `confidence`
+- **Objectif** : écrire la fiche complète d'un document analysé (contrat `DocumentRecord`).
+- **Livrables** : `db/schema.sql` — colonne `confidence REAL` sur `document` ; `db/connection.py` — migration idempotente (`PRAGMA table_info` + `ALTER TABLE` si absente) ; `pipeline.py` — `write_record(conn, doc_id, record: AnalysisRecord) -> WriteResult` : `UPDATE document` (`dc_title` repli = nom de fichier, `attributes` = JSON, `confidence`), `INSERT OR IGNORE` dans `document_subject`, `document_description`, `document_category` (`is_primary=1`, `classification_date` ISO).
+- **Critères d'acceptation** : TU-42 à TU-44 (tables filles + JSON + confiance, idempotence, migration).
+- **Dépendances** : T1.2, T1.5, T3.1, T4.1.
+
+## T6.2 — Persistance de l'analyse dans le pipeline
+- **Objectif** : écrire chaque analyse dès l'étape 2, sans réappeler l'API.
+- **Livrables** : `pipeline.py` — `analyze_base(..., persist=False)` ; si `persist=True`, `write_record(conn, doc_id, record)` après résolution émetteur ; `cli.py` — `pipeline --analyze` passe `persist=True`.
+- **Critères d'acceptation** : 2e run sans doublon de lignes filles ; TI-08.
+- **Dépendances** : T4.3, T5.3, T6.1.
+
+## T6.3 — Reprise ciblée + contrôle qualité
+- **Objectif** : identifier les documents à retraiter et produire des statistiques (cf. `modèleTraitement.mmd` E6/E7).
+- **Livrables** : `pipeline.py` — `quality_report(conn, policy) -> dict` (totaux, par statut, par catégorie, émetteurs en attente, confiance < seuil) et `pending_review(conn, policy) -> list[int]` (doc_id avec `issuer_id` NULL ou `confidence` < seuil) ; `cli.py` — ligne « Quality: ... » après `--analyze`.
+- **Critères d'acceptation** : TU-45 + TI-08.
+- **Dépendances** : T6.2.

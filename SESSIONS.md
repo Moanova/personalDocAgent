@@ -261,3 +261,21 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Validation utilisateur T3-T5 ; **EPIC E6** : écriture complète étape 4 (tables filles : subjects, descriptions, categories, attributes, agents), reprise ciblée, persistance des AnalysisRecord ; puis **E7** mode interrogation (4 outils + CLI `query`).
+
+---
+
+## 2026-11-12 — Séance 13 : définition de l'EPIC E6 (écriture complète étape 4) + plans détaillés
+
+### Actions réalisées
+- **EPIC E6** enregistrée dans `docs/projet/kanban.md` : écriture complète (étape 4) — `write_record()` (T6.1, « En cours »), persistance de l'analyse dans le pipeline `analyze_base(persist=True)` + CLI (T6.2), reprise ciblée + contrôle qualité `quality_report`/`pending_review` (T6.3, « À faire »).
+- **Plans détaillés** : `docs/tasks/T6.1_write_record.md`, `T6.2_persistance_analyse.md`, `T6.3_controle_qualite.md`.
+- **Plan de tests** : TU-42 à TU-45 + TI-08 (`tests/unit/test_write_record.py`, `tests/integration/test_pipeline_write.py`).
+- **Décision de conception** : nouvelle colonne `confidence REAL` sur `document` (contrat `DocumentRecord` en a une, la table non) + migration idempotente dans `init_db` (PRAGMA + ALTER). `dc_title` : repli = nom de fichier. Tables filles en `INSERT OR IGNORE` (idempotence).
+- Board Miro : non mis à jour pour les statuts (l'outil refuse l'édition de lignes kanban par id — noté) ; `kanban.md` = source de vérité, validé par l'utilisateur.
+- Commit + push sur `dev` (accès GitHub rétabli).
+
+### Blocages
+- Miro : édition de lignes kanban par `data-record-id` refusée par l'outil (2 tentatives) — contournement manuel ou à retenter.
+
+### Prochaine séance
+- Implémentation T6.1-T6.3 ; `python -m pytest` (attendu : 105 + nouveaux) ; commit/push ; puis **EPIC E7** (mode interrogation : 4 outils lecture seule + FTS5 + CLI `query`).
