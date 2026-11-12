@@ -36,7 +36,7 @@ Placed before the subcommand:
 |---|---|---|
 | `init-db` | \u2014 | Create the SQLite database from the schema (`src/personaldocagent/db/schema.sql`). |
 | `load-tree` | \u2014 | Load the YAML seed of the classification tree (`config/classification.yaml`). |
-| `pipeline` | `--analyze` | Index the documents of the allowed perimeter: step 0 acquisition (direct read or Mistral OCR depending on `config/routing.yaml`), step 1 persistence. With `--analyze`: step 2 model-driven content analysis, issuer matching, full record writing and quality report. |
+| `pipeline` | `--analyze` | Index the documents of the allowed perimeter: step 0 acquisition (direct read or Mistral OCR depending on `config/routing.yaml`), step 1 saving of the documents and their extracted text into the database. With `--analyze`: step 2 model-driven content analysis, issuer matching, full record writing and quality report. |
 | `query` | `--question "..."` | Query the collection in natural language; answers are anchored to documents (doc_id + title). Without `--question`, interactive session (end with `exit`, `quit` or Ctrl-D). History in `data/query_history.json`, query journal in `data/query.log`. |
 
 ### Examples

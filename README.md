@@ -36,7 +36,7 @@ Placées avant la sous-commande :
 |---|---|---|
 | `init-db` | — | Crée la base SQLite à partir du schéma (`src/personaldocagent/db/schema.sql`). |
 | `load-tree` | — | Charge la graine YAML de l'arbre de classification (`config/classification.yaml`). |
-| `pipeline` | `--analyze` | Indexe les documents du périmètre autorisé : étape 0 acquisition (lecture directe ou OCR Mistral selon `config/routing.yaml`), étape 1 persistance. Avec `--analyze` : étape 2 analyse de contenu par le modèle, rattachement des émetteurs, écriture des fiches complètes et rapport de qualité. |
+| `pipeline` | `--analyze` | Indexe les documents du périmètre autorisé : étape 0 acquisition (lecture directe ou OCR Mistral selon `config/routing.yaml`), étape 1 sauvegarde des documents et de leur texte extrait dans la base de données. Avec `--analyze` : étape 2 analyse de contenu par le modèle, rattachement des émetteurs, écriture des fiches complètes et rapport de qualité. |
 | `query` | `--question "..."` | Interroge le fonds en langage naturel ; les réponses sont ancrées aux documents (doc_id + titre). Sans `--question`, session interactive (fin par `exit`, `quit` ou Ctrl-D). Historique dans `data/query_history.json`, journal des requêtes dans `data/query.log`. |
 
 ### Exemples
