@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.4.0
+# Version      : 0.5.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -76,8 +76,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Step 1 persistence: {written} written, {duplicates} duplicate(s)")
         print(f"Rejections journalled in {DEFAULT_REJECTION_LOG}")
         if args.analyze:
-            records = analyze_base(args.config, args.base)
+            records = analyze_base(args.config, args.base, with_issuers=True)
             print(f"Step 2 analysis: {len(records)} analyzed")
+            from .db.connection import connect
+
+            conn = connect(args.base)
+            try:
+                known = conn.execute(
+                    "SELECT COUNT(*) FROM document WHERE issuer_id IS NOT NULL"
+                ).fetchone()[0]
+                pending = conn.execute(
+                    "SELECT COUNT(*) FROM document WHERE issuer_id IS NULL"
+                ).fetchone()[0]
+            finally:
+                conn.close()
+            print(f"Issuers: {known} known, {pending} pending")
         return 0
 
     raise NotImplementedError(

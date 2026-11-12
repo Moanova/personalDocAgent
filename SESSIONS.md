@@ -244,3 +244,20 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Implémentation de T5.1-T5.3 selon les plans ; `python -m pytest` ; commit (par l'utilisateur si le token sandbox reste invalide).
+
+---
+
+## 2026-11-12 — Séance 12 : implémentation EPIC E5 (rapprochement émetteur)
+
+### Actions réalisées
+- **Accès GitHub rétabli** (app réassociée) : push OK (`d9ec6ab..92c5295`).
+- **T5.1** : `issuers.py` v0.2.0 — `_normalize` (casefold), `match_issuer` exact puis approximatif (Python, référentiel entier) → known/ambiguous/unknown. TU-34 à TU-37.
+- **T5.2** : `create_issuer` (idempotent sur label normalisé, `IntegrityError` → relecture), `resolve_issuer` (confiance ≥ `auto_confidence_threshold` → création auto, sinon file d'attente). TU-38.
+- **T5.3** : `pipeline.py` v0.5.0 — `analyze_base(..., with_issuers=True)` (une seule passe) → `UPDATE document.issuer_id` si known ; `cli.py` v0.5.0 — `pipeline --analyze` + rapport « Issuers: K known, P pending ». TI-07 (EDF connu assigné, inconnu confiance 0.5 en attente, rapport CLI).
+- **Validation agent (étape 5)** : `python -m pytest` → **105 tests passent** (99 + 6 nouveaux) ; T5.1-T5.3 « En revue » (kanban + Miro). Commit + push sur `dev`.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur T3-T5 ; **EPIC E6** : écriture complète étape 4 (tables filles : subjects, descriptions, categories, attributes, agents), reprise ciblée, persistance des AnalysisRecord ; puis **E7** mode interrogation (4 outils + CLI `query`).

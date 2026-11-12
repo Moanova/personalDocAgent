@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : pipeline.py
-# Version      : 0.4.1
+# Version      : 0.5.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -22,6 +22,7 @@ from .classification import export_flat, load_tree
 from .config import Config, load_config
 from .contracts import AcquisitionResult, AnalysisRecord, WriteResult
 from .db.connection import connect, init_db
+from .issuers import match_issuer, resolve_issuer
 from .perimeter import DEFAULT_REJECTION_LOG, iter_allowed_files, log_rejection
 from .routing import run_step0_checks
 
@@ -139,8 +140,14 @@ def run_step0(config_dir: Path, base: Path) -> list[AcquisitionResult]:
     return results
 
 
-def analyze_base(config_dir: Path, base: Path, client=None) -> list[AnalysisRecord]:
-    """Step 2: analyze every persisted document text (first chunk) into AnalysisRecords."""
+def analyze_base(
+    config_dir: Path, base: Path, client=None, with_issuers: bool = False
+) -> list[AnalysisRecord]:
+    """Step 2: analyze every persisted document text (first chunk) into AnalysisRecords.
+
+    With with_issuers=True, also resolve the issuer of each record (match + confidence rule)
+    and set document.issuer_id when known.
+    """
     config = load_config(Path(config_dir))
     init_db(base)
     conn = connect(base)
@@ -162,7 +169,19 @@ def analyze_base(config_dir: Path, base: Path, client=None) -> list[AnalysisReco
         for row in rows:
             segments = chunk_text(row["extracted_text"])
             try:
-                records.append(analyze(segments[0] if segments else "", categories, config.policy, client))
+                record = analyze(segments[0] if segments else "", categories, config.policy, client)
+                if with_issuers and record.issuer_candidate:
+                    match = match_issuer(conn, record.issuer_candidate)
+                    resolved = resolve_issuer(
+                        conn, match, record.issuer_candidate, record.confidence, config.policy
+                    )
+                    if resolved.status == "known" and resolved.issuer_id is not None:
+                        conn.execute(
+                            "UPDATE document SET issuer_id = ? WHERE doc_id = ?",
+                            (resolved.issuer_id, row["doc_id"]),
+                        )
+                        conn.commit()
+                records.append(record)
             except ValueError as exc:
                 print(f"Step 2 analysis: doc_id={row['doc_id']} skipped ({exc})", file=sys.stderr)
     finally:

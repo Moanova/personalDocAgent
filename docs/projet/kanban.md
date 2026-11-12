@@ -79,11 +79,9 @@ Rapprocher l'`issuer_candidate` produit par l'étape 2 (E4) au référentiel `is
 # Tableau du kanban
 
 ## À faire
-T5.2
-T5.3
+
 
 ## En cours
-T5.1
 
 
 ## En revue
@@ -93,6 +91,9 @@ T3.3
 T4.1
 T4.2
 T4.3
+T5.1
+T5.2
+T5.3
 
 
 ## Terminé
