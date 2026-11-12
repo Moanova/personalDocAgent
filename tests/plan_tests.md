@@ -80,3 +80,14 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 | TU-44 | T6.1 | Migration : `init_db` ajoute la colonne `confidence` sur une base existante (PRAGMA) | `tests/unit/test_write_record.py` |
 | TU-45 | T6.3 | `quality_report` / `pending_review` : totaux, par statut/catégorie, émetteurs en attente, confiance < seuil | `tests/unit/test_write_record.py` |
 | TI-08 | T6.2/T6.3 | Bout en bout : `analyze_base(persist=True, with_issuers=True)` → fiches complètes en base, 2e run sans doublon, rapport CLI « Quality: » | `tests/integration/test_pipeline_write.py` |
+
+| ID | Tâche | Description | Fichier de test |
+|---|---|---|---|
+| TU-46 | T7.1 | `search_documents` : filtres SearchFilters (catégorie, émetteur, dates, type, statut, mot-clé) | `tests/unit/test_query_tools.py` |
+| TU-47 | T7.1 | `search_fulltext` : FTS5 MATCH sur `conversion_fts` → doc_id + extrait | `tests/unit/test_query_tools.py` |
+| TU-48 | T7.1 | `read_document` : texte + description, troncature des textes longs (extrait autour des occurrences) | `tests/unit/test_query_tools.py` |
+| TU-49 | T7.1 | `aggregate` : somme via `json_extract(attributes)`, champ non whitelisté → rejet | `tests/unit/test_query_tools.py` |
+| TU-50 | T7.2 | `ask` avec client fake : tool_call → dispatch → réponse finale ancrée (doc_id + titre) | `tests/unit/test_query_agent.py` |
+| TU-51 | T7.2 | Historique persisté/rechargé (JSON) + journal des requêtes | `tests/unit/test_query_agent.py` |
+| TU-52 | T7.2 | tool inconnu / arguments invalides → erreur gérée, boucle interrompue proprement | `tests/unit/test_query_agent.py` |
+| TI-09 | T7.3 | CLI `query --question` avec client fake sur base seedée → réponse ancrée ; REPL hors scope test | `tests/integration/test_query_cli.py` |

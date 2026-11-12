@@ -295,3 +295,20 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Validation utilisateur T3-T6 ; **EPIC E7** : mode interrogation — `interrogation/tools.py` (4 outils lecture seule : search_documents, search_fulltext FTS5, read_document, aggregate), `interrogation/agent.py` (chat.complete + function calling, historique local), CLI `query`.
+
+---
+
+## 2026-11-12 — Séance 15 : définition de l'EPIC E7 (mode interrogation) + plans détaillés
+
+### Actions réalisées
+- **EPIC E7** enregistrée dans `docs/projet/kanban.md` : mode interrogation conversationnel, lecture seule (conception §7) — 4 outils (`search_documents`, `search_fulltext` FTS5, `read_document` avec troncature, `aggregate` whitelist + `json_extract`) ; agent `ask()` en function calling, historique liste Python persistable JSON, ancrage doc_id+titre obligatoire, journal des requêtes, jamais de chemins de fichiers exposés. Tâches : **T7.1** outils (v0.2.0, « En cours »), **T7.2** agent (v0.2.0 + `prompts/query.py`), **T7.3** CLI `query` (`--question` + REPL, v0.7.0, « À faire »).
+- **Plans détaillés** : `docs/tasks/T7.1_outils_lecture.md`, `T7.2_agent_query.md`, `T7.3_cli_query.md`.
+- **Plan de tests** : TU-46 à TU-52 + TI-09 (`tests/unit/test_query_tools.py`, `tests/unit/test_query_agent.py`, `tests/integration/test_query_cli.py`) ; `test_cli.py` à mettre à jour (query ne sera plus NotImplementedError).
+- Squelettes vérifiés : `tools.py` (4 fonctions), `agent.py` (`ask(question, history=None) -> str`).
+- Commit + push sur `dev`.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Implémentation T7.1-T7.3 ; `python -m pytest` (attendu : 110 + nouveaux) ; commit/push. Puis clôture P1 du projet (conception §8).

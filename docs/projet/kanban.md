@@ -88,12 +88,26 @@ Persister les `AnalysisRecord` de l'étape 2 dans la fiche complète du document
 
 ---
 
+## E7 — Mode interrogation (agent conversationnel, lecture seule)
+Recherche et question-réponse sur le fonds, distinct du pipeline par lots (cf. `conception.md` §7). L'agent n'a jamais de chemins de fichiers : il orchestre **4 outils en lecture seule** (`interrogation/tools.py`) puis rédige la réponse. Outils : `search_documents(filters)` (métadonnées), `search_fulltext(expression)` (FTS5 sur `conversion`), `read_document(doc_id)` (texte + description, troncature avec extrait autour des occurrences), `aggregate(restricted_query)` (sommes/comptages sur champs whitelistés, montants via `json_extract` sur `attributes`). Architecture : `chat.complete` + function calling, historique dans une liste Python (persistable JSON), **ancrage obligatoire** des réponses (doc_id + titre), journalisation des requêtes.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T7.1 | `interrogation/tools.py` v0.2.0 : les 4 outils lecture seule (SQL/FTS5/whitelist JSON) | T1.2, T1.5, T3.1, T6.1 |
+| T7.2 | `interrogation/agent.py` v0.2.0 : boucle `ask()` (function calling, historique local persistable, prompt d'ancrage, journal), client injectable | T7.1, T4.1 |
+| T7.3 | CLI `query` (`--question` one-shot + REPL interactif) + tests ; `test_cli.py` mis à jour (query n'est plus `NotImplementedError`) | T7.2, T2.4 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
-
+T7.2
+T7.3
 
 ## En cours
+T7.1
 
 
 ## En revue
@@ -294,3 +308,21 @@ T2.4
 - **Livrables** : `pipeline.py` — `quality_report(conn, policy) -> dict` (totaux, par statut, par catégorie, émetteurs en attente, confiance < seuil) et `pending_review(conn, policy) -> list[int]` (doc_id avec `issuer_id` NULL ou `confidence` < seuil) ; `cli.py` — ligne « Quality: ... » après `--analyze`.
 - **Critères d'acceptation** : TU-45 + TI-08.
 - **Dépendances** : T6.2.
+
+## T7.1 — Les 4 outils lecture seule (`interrogation/tools.py`)
+- **Objectif** : exposer à l'agent 4 outils strictement read-only sur la base (jamais de chemins de fichiers).
+- **Livrables** : `tools.py` v0.2.0 — `search_documents(conn, filters: SearchFilters)` (catégorie/émetteur/dates/type/statut/mot-clé), `search_fulltext(conn, expression)` (FTS5 MATCH sur `conversion_fts`, doc_id + extrait), `read_document(conn, doc_id)` (texte extrait + description, troncature des textes longs avec extrait autour des occurrences), `aggregate(conn, restricted_query)` (sommes/comptages sur champs whitelistés uniquement ; montants via `json_extract(attributes, ...)` ; champ non whitelisté → rejet).
+- **Critères d'acceptation** : TU-46 à TU-49.
+- **Dépendances** : T1.2, T1.5, T3.1, T6.1.
+
+## T7.2 — Agent d'interrogation (`interrogation/agent.py`)
+- **Objectif** : boucle conversationnelle `chat.complete` + function calling, historique maintenu localement (persistable JSON), réponses ancrées (doc_id + titre), requêtes journalisées.
+- **Livrables** : `agent.py` v0.2.0 — `ask(question, history=None, conn=None, client=None) -> str` : déclaration des 4 outils au modèle, dispatch des tool_calls vers `tools.py`, boucle jusqu'à réponse texte finale ; prompt système versionné (`prompts/query.py`) imposant l'ancrage doc_id+titre ; historique liste Python + `save_history`/`load_history` (JSON) ; journal des questions/réponses ; client injectable (tests hors ligne).
+- **Critères d'acceptation** : TU-50 à TU-52.
+- **Dépendances** : T7.1, T4.1.
+
+## T7.3 — CLI `query`
+- **Objectif** : rendre la commande `query` fonctionnelle (one-shot `--question "..."` + REPL interactif sans argument).
+- **Livrables** : `cli.py` v0.7.0 — branche `query` (charge config/base, client paresseux, boucle REPL ou one-shot, historique persistée dans `data/query_history.json`) ; `tests/unit/test_cli.py` mis à jour (`query` n'est plus `NotImplementedError`).
+- **Critères d'acceptation** : TI-09 (CLI query avec client fake sur base seedée) ; `python -m personaldocagent query --question "..."`.
+- **Dépendances** : T7.2, T2.4.
