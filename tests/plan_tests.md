@@ -62,7 +62,8 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 | TU-30 | T4.2 | catégorie absente de l'arbre → `ValueError` (choix contraint) | `tests/unit/test_analysis.py` |
 | TU-31 | T4.1 | clé d'`attributes` non `snake_case` → `ValueError` | `tests/unit/test_analysis.py` |
 | TU-32 | T4.2 | le prompt transmis contient l'export aplati de l'arbre + `max_keywords` + convention (appel mocké inspecté) | `tests/unit/test_analysis.py` |
-| TU-33 | T4.1 | confiance hors [0,1] ou réponse JSON invalide → `ValueError` | `tests/unit/test_analysis.py` |
+| TU-33 | T4.1 | confiance hors [0,1] ou réponse JSON invalide → `ValueError` (avec aperçu du contenu brut) | `tests/unit/test_analysis.py` |
+| TU-39 | T4.1 (fix) | `content` du modèle en liste de chunks (forme SDK 3.x : dicts ou TextChunk) normalisé avant `json.loads` | `tests/unit/test_analysis.py` |
 | TI-06 | T4.3 | `pipeline --analyze` de bout en bout : corpus tmp + client fake → un `AnalysisRecord` par document persisté | `tests/integration/test_pipeline_analyze.py` |
 
 | ID | Tâche | Description | Fichier de test |

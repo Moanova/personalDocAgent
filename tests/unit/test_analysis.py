@@ -39,7 +39,7 @@ class _FakeClient:
 
         def complete(*, model, messages, response_format=None):
             self.calls.append({"model": model, "messages": messages, "response_format": response_format})
-            content = payload if isinstance(payload, str) else json.dumps(payload)
+            content = payload if isinstance(payload, (str, list)) else json.dumps(payload)
             return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
 
         self.chat = SimpleNamespace(complete=complete)
@@ -97,8 +97,19 @@ def test_analyze_bad_confidence_or_invalid_json_rejected():
     """TU-33: confidence out of [0,1] or invalid JSON -> ValueError."""
     with pytest.raises(ValueError, match="confidence"):
         analyze("texte", CATEGORIES, POLICY, client=_FakeClient({**VALID_PAYLOAD, "confidence": 1.5}))
-    with pytest.raises(ValueError, match="Analysis completion failed"):
+    with pytest.raises(ValueError, match="content preview"):
         analyze("texte", CATEGORIES, POLICY, client=_FakeClient("not json at all"))
+
+
+def test_analyze_accepts_chunked_content():
+    """TU-39: model content as a list of chunks (SDK 3.x shape: dicts or TextChunk) is joined before json.loads."""
+    payload_text = json.dumps(VALID_PAYLOAD)
+    as_dicts = [{"type": "text", "text": payload_text[:20]}, {"type": "text", "text": payload_text[20:]}]
+    record = analyze("texte", CATEGORIES, POLICY, client=_FakeClient(as_dicts))
+    assert record.category_id == 3
+    as_objects = [SimpleNamespace(type="text", text=payload_text)]
+    record = analyze("texte", CATEGORIES, POLICY, client=_FakeClient(as_objects))
+    assert record.issuer_candidate == "EDF"
 
 
 def test_sdk_chat_api_shape():

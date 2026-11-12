@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : analysis.py
-# Version      : 0.2.1
+# Version      : 0.2.2
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -79,6 +79,21 @@ def _parse_record(payload: dict, categories: str, policy: AnalysisPolicy) -> Ana
     return record
 
 
+def _content_to_str(content) -> str:
+    """Normalize a message content to plain text: str as-is, list of chunks (str/dict/TextChunk) joined."""
+    if isinstance(content, str):
+        return content
+    parts = []
+    for chunk in content or []:
+        if isinstance(chunk, str):
+            parts.append(chunk)
+        elif isinstance(chunk, dict):
+            parts.append(str(chunk.get("text", "")))
+        else:
+            parts.append(str(getattr(chunk, "text", chunk)))
+    return "".join(parts)
+
+
 def analyze(text: str, categories: str, policy: AnalysisPolicy, client=None) -> AnalysisRecord:
     """Analyze an extracted text: category, issuer candidate, keywords, summary, JSON attributes."""
     if client is None:
@@ -93,9 +108,15 @@ def analyze(text: str, categories: str, policy: AnalysisPolicy, client=None) -> 
             ],
             response_format={"type": "json_object"},
         )
-        payload = json.loads(response.choices[0].message.content)
     except Exception as exc:
         raise ValueError(f"Analysis completion failed: {exc}") from exc
+    raw = _content_to_str(response.choices[0].message.content)
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Analysis completion failed: invalid JSON ({exc}); content preview: {raw[:200]!r}"
+        ) from exc
     if not isinstance(payload, dict):
         raise ValueError("Analysis payload is not a JSON object")
     return _parse_record(payload, categories, policy)

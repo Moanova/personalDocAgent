@@ -203,3 +203,23 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 
 ### Prochaine séance
 - Re-test utilisateur sur petit corpus avec base neuve ; puis plans détaillés et implémentation de **T5.1-T5.3** (EPIC E5).
+
+---
+
+## 2026-11-12 — Séance 9 : correctif content chunké (SDK 3.x) après essai réel sur 6 PDF
+
+### Signalement utilisateur
+Run réel sur 6 PDF : étapes 0-1 OK (6 acquis, 6 écrits), étape 2 : les 6 documents ignorés avec `Analysis completion failed: the JSON object must be str, bytes or bytearray, not list`.
+
+### Cause racine
+Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : avec `response_format=json_object`, le SDK renvoie une **liste de chunks**, et `json.loads` recevait la liste. Les fakes de test renvoyaient une `str` — même leçon que `chat.completions`.
+
+### Correctif
+- `analysis.py` v0.2.2 : `_content_to_str()` normalise le content (str tel quel ; liste de chunks dict/str/TextChunk jointe) avant `json.loads` ; en cas de JSON invalide, le `ValueError` inclut un aperçu de 200 caractères du contenu brut (débuggabilité).
+- Tests : TU-39 (content chunké en dicts et en objets TextChunk) ; TU-33 complété (aperçu dans l'erreur).
+
+### Validation
+- `python -m pytest` → **99 tests passent** (98 + TU-39). Commit + push sur `dev` (demandé explicitement).
+
+### Prochaine séance
+- Re-test utilisateur (petit corpus, base neuve) ; puis **T5.1-T5.3** (EPIC E5).
