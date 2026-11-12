@@ -43,3 +43,14 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 |---|---|---|---|
 | TU-20 | T2.4 | `main(["--config", cfg, "--base", db, "pipeline"])` sur corpus tmp (`monkeypatch.chdir` pour isoler le journal) : rc 0, base créée, rapport affiché | `tests/unit/test_cli_pipeline.py` |
 | TI-04 | T2.4 | CLI `pipeline` de bout en bout : `.txt` acquis, `.xyz` rejeté et journalisé dans le répertoire de travail tmp, aucun appel réseau | `tests/integration/test_cli_run.py` |
+
+| ID | Tâche | Description | Fichier de test |
+|---|---|---|---|
+| TU-21 | T3.1 | `persist` : ligne `document` déterministe (`source_file` canonique, `date_added` ISO 8601 UTC, `status='active'`, `dc_format`) + ligne `conversion` (`model = result.model or result.route`) + `WriteResult(written=True)` | `tests/unit/test_persist.py` |
+| TU-22 | T3.1 | Idempotence : 2e `persist` sur le même `source_file` → `written=False, reason="duplicate"`, aucune ligne ajoutée | `tests/unit/test_persist.py` |
+| TU-23 | T3.1 | FTS : après `persist`, le texte extrait est retrouvé dans `conversion_fts` | `tests/unit/test_persist.py` |
+| TU-24 | T3.1 | Mapping MIME : `.pdf`→`application/pdf`, `.txt`→`text/plain`, extension inconnue→`application/octet-stream` | `tests/unit/test_persist.py` |
+| TU-25 | T3.2 | `run(config_dir, base)` retourne des `WriteResult(written=True)` et écrit `document` + `conversion` | `tests/unit/test_run_persist.py` |
+| TU-26 | T3.2 | 2e `run` : doublons rejetés à l'étape 0 (`duplicate` journalisé, rien acquis), base inchangée | `tests/unit/test_run_persist.py` |
+| TU-27 | T3.2 | CLI `pipeline` : rapport acquis/écrits, rc 0, base remplie | `tests/unit/test_cli_pipeline.py` |
+| TI-05 | T3.3 | Bout en bout : corpus tmp (txt, html, `.xyz`, `.docx` corrompu) → 2 écrits, FTS OK, rejets journalisés, 2e run idempotent (doublons rejetés à l'étape 0) | `tests/integration/test_pipeline_persist.py` |

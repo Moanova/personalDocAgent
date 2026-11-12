@@ -40,6 +40,18 @@ Première brique du pipeline (cf. `docs/conception/conception.md` §4 et §5, `m
 
 ---
 
+## E3 — Étape 1 : description formelle et persistance en base
+À partir des `AcquisitionResult` de l'étape 0 (E2), écrire en base la fiche formelle minimale de chaque document, de façon déterministe et idempotente : ligne `document` (champs techniques : `source_file` canonique, `date_added`, `status`, `dc_format`) + texte extrait dans `conversion` (FTS5 alimenté par les triggers). Le contrôle duplicata (`is_duplicate` sur `source_file`) devient actif. Les champs issus de l'analyse agentique (titre, date, classement, résumé, émetteur) relèvent de l'EPIC E4.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T3.1 | Persistance étape 1 : `persist()` dans `pipeline.py` (`document` + `conversion`, idempotent) | T1.2, T1.5, T2.2, T2.3 |
+| T3.2 | Branchement `run(config_dir, base) -> list[WriteResult]` + rapport CLI `pipeline` (acquis / écrits / rejetés) | T2.3, T2.4, T3.1 |
+| T3.3 | Tests d'intégration de bout en bout (corpus tmp, 2e run idempotent, FTS) + validation E3 | T3.1, T3.2 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
@@ -49,6 +61,9 @@ Première brique du pipeline (cf. `docs/conception/conception.md` §4 et §5, `m
 
 
 ## En revue
+T3.1
+T3.2
+T3.3
 
 
 ## Terminé
@@ -162,3 +177,21 @@ T2.4
 - **Livrables** : branchement de `cli.py` sur `pipeline.run` (`--config`, `--base`) avec rapport des résultats (acceptés / rejetés et raisons).
 - **Critères d'acceptation** : `python -m personaldocagent pipeline --config config --base data/personaldocagent.db` s'exécute sur un petit corpus de test.
 - **Dépendances** : T2.3.
+
+## T3.1 — Persistance étape 1 (`persist`)
+- **Objectif** : écrire en base, de façon déterministe et idempotente, la fiche formelle minimale d'un document acquis.
+- **Livrables** : `pipeline.py` — `persist(conn, result: AcquisitionResult) -> WriteResult` : si `source_file` déjà présent → `WriteResult(written=False, reason="duplicate")` ; sinon insertion dans `document` (`source_file` canonique, `date_added` ISO 8601 UTC, `status='active'`, `dc_format` = MIME déduit de l'extension via `_MIME_BY_EXT`, repli `application/octet-stream`), puis `save_conversion(conn, doc_id, result)` avec `model = result.model or result.route` (colonne NOT NULL), retour `WriteResult(doc_id, written=True)` ; `IntegrityError` → `written=False, reason="duplicate"`.
+- **Critères d'acceptation** : TU-21 à TU-24 (champs déterministes, idempotence, FTS alimenté, mapping MIME).
+- **Dépendances** : T1.2, T1.5, T2.2, T2.3.
+
+## T3.2 — Branchement `run` + rapport CLI
+- **Objectif** : enchaîner étape 0 + persistance en respectant le contrat du squelette `run(...) -> list[WriteResult]` (testé dans `test_contracts.py`).
+- **Livrables** : `pipeline.py` — `run(config_dir, base) -> list[WriteResult]` (charge la config, `init_db`, boucle sur les `allowed_roots` : `acquire` puis `persist` de chaque résultat) ; `cli.py` — branche `pipeline` sur `run`, rapport : acquis, écrits, doublons, rejets journalisés.
+- **Critères d'acceptation** : TU-25 à TU-27 ; un 2e run rejette les doublons à l'étape 0 (`duplicate` journalisé, rien acquis, base inchangée).
+- **Dépendances** : T2.3, T2.4, T3.1.
+
+## T3.3 — Tests d'intégration bout en bout + validation E3
+- **Objectif** : valider l'EPIC E3 de bout en bout sur un corpus temporaire.
+- **Livrables** : `tests/integration/test_pipeline_persist.py` — TI-05 : corpus tmp (txt, html, `.xyz`, `.docx` corrompu) → 2 documents écrits, `conversion` + FTS5 interrogeables, rejets journalisés (`unsupported_format`, `conversion_failed`), 2e run idempotent (0 écrit).
+- **Critères d'acceptation** : TI-05 passe, `python -m pytest` vert, E3 déplacée « En revue ».
+- **Dépendances** : T3.1, T3.2.

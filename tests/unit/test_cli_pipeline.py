@@ -6,7 +6,7 @@
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
-"""Unit test for the pipeline CLI command (task T2.4, TU-20 in tests/plan_tests.md)."""
+"""Unit tests for the pipeline CLI command (tasks T2.4/T3.2, TU-20 and TU-27 in tests/plan_tests.md)."""
 
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def write_test_config(cfg: Path, root: Path) -> None:
 
 
 def test_cli_pipeline_runs_step0(tmp_path, monkeypatch, capsys):
-    """TU-20: pipeline command acquires direct_read files, creates the db, prints a report."""
+    """TU-20 + TU-27: pipeline command acquires, persists, creates the db, prints the report."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path / "collection"
     root.mkdir()
@@ -47,4 +47,4 @@ def test_cli_pipeline_runs_step0(tmp_path, monkeypatch, capsys):
     assert db.exists()
     out = capsys.readouterr().out
     assert "1 document(s) acquired" in out
-    assert "1 direct_read" in out
+    assert "1 written, 0 duplicate(s)" in out

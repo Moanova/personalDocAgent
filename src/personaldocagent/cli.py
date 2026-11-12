@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.2.0
+# Version      : 0.3.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -9,7 +9,6 @@
 """Command-line interface of personalDocAgent."""
 
 import argparse
-from collections import Counter
 from pathlib import Path
 
 
@@ -61,12 +60,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "pipeline":
         from .perimeter import DEFAULT_REJECTION_LOG
-        from .pipeline import run_step0
+        from .pipeline import run
 
-        results = run_step0(args.config, args.base)
-        by_route = Counter(result.route for result in results)
-        report = ", ".join(f"{count} {route}" for route, count in sorted(by_route.items()))
-        print(f"Step 0 acquisition: {len(results)} document(s) acquired ({report or 'none'})")
+        results = run(args.config, args.base)
+        written = sum(1 for r in results if r.written)
+        duplicates = sum(1 for r in results if not r.written and r.reason == "duplicate")
+        print(f"Step 0 acquisition: {len(results)} document(s) acquired")
+        print(f"Step 1 persistence: {written} written, {duplicates} duplicate(s)")
         print(f"Rejections journalled in {DEFAULT_REJECTION_LOG}")
         return 0
 

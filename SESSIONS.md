@@ -105,3 +105,29 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 ### Prochaine séance
 - Sur le poste Windows : `git pull`, `python -m pytest -q` (attendu : 79 passed), puis test réel avec `allowed_roots` = dossiers retenus uniquement.
 - **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion` via `save_conversion`, tables filles), contrôle duplicata actif.
+
+---
+
+## 2026-11-12 — Séance 5 : définition de l'EPIC E3 (étape 1 + persistance) et plans détaillés
+
+### Actions réalisées
+- **EPIC E3** enregistrée dans `docs/projet/kanban.md` : étape 1 — description formelle et persistance en base (déterministe, idempotente ; duplicata actif) : **T3.1** `persist()` dans `pipeline.py` (« En cours »), **T3.2** `run(config_dir, base) -> list[WriteResult]` + rapport CLI (« À faire »), **T3.3** tests d'intégration bout en bout + validation (« À faire »).
+- **Plans détaillés** : `docs/tasks/T3.1_persistance_etape1.md`, `T3.2_run_et_rapport_cli.md`, `T3.3_tests_integration_e3.md`.
+- **Plan de tests** : TU-21 à TU-27 + TI-05 ajoutés dans `tests/plan_tests.md` (persist déterministe/idempotent/FTS/MIME, run + 2e run doublons, CLI, bout en bout).
+- Sémantique périmètre actée avec l'utilisateur : `allowed_roots` récursif, deny-by-default, `exclusions` = trous internes (`<dossier>\<sous>\**`), jamais `C:\**`.
+- **EPIC E3 implémentée** : `pipeline.py` v0.3.0 — `persist()` (insertion `document` déterministe : `source_file` canonique, `date_added` ISO UTC, `status='active'`, `dc_format` MIME via `_MIME_BY_EXT` + repli `application/octet-stream` ; `save_conversion` avec `model = result.model or result.route` ; idempotent, `IntegrityError` → `duplicate`) et `run(config_dir, base) -> list[WriteResult]` (contrat squelette respecté) ; `cli.py` v0.3.0 — branche `pipeline` sur `run`, rapport « acquired / written / duplicates » + journal.
+- **Tests E3** : `tests/unit/test_persist.py` (TU-21 à TU-24), `tests/unit/test_run_persist.py` (TU-25, TU-26), `tests/unit/test_cli_pipeline.py` (TU-20/TU-27), `tests/integration/test_pipeline_persist.py` (TI-05 : 2 écrits, FTS OK, rejets journalisés, 2e run idempotent).
+- **Comportement constaté et acté** : au 2e run, les doublons sont rejetés à l'étape 0 (`run_step0_checks` → `duplicate` journalisé) avant toute conversion — conforme à la conception (l'OCR n'est jamais re-payé) ; la branche `duplicate` de `persist()` n'est qu'un garde-fou de course (TU-22). TU-26 et les docs corrigés en conséquence.
+- **Validation agent (étape 5)** : `python -m pytest` → **87 tests passent** (79 + 8 nouveaux) ; T3.1-T3.3 « En revue » (kanban + board Miro). Commit + push sur `dev` (demandé explicitement).
+
+### Décisions clés
+- `persist()` écrit `document` (champs techniques : `source_file`, `date_added`, `status='active'`, `dc_format` MIME) + `conversion` via `save_conversion` avec `model = result.model or result.route` (colonne NOT NULL).
+- `run(config_dir, base)` respecte le contrat squelette `-> list[WriteResult]` (testé) ; `run_step0` conservé.
+- Champs issus de l'analyse (titre, date, classement, résumé, émetteur) hors E3 → EPIC E4 (étape 2 agentique).
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur de T3.1-T3.3 (« Terminé » + Miro « Fait » si validé).
+- **EPIC E4** : étape 2 agentique (`analysis.py` + prompts, catégorie contrainte via l'arbre, mots-clés, résumé, émetteur candidat, `attributes` JSON ; `chat.completions` mocké en test).
