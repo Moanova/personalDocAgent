@@ -1,19 +1,19 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : tests/unit/test_perimeter.py
-# Version      : 0.1.0
-# Date         : 2026-11-11
+# Version      : 0.2.0
+# Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
 """Unit tests for the file-system access perimeter."""
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
 from personaldocagent.config import PerimeterConfig
-from personaldocagent.perimeter import is_allowed, iter_allowed_files, log_rejection
+from personaldocagent.perimeter import _is_excluded, is_allowed, iter_allowed_files, log_rejection
 
 
 @pytest.fixture
@@ -89,6 +89,14 @@ def test_walk_stops_inside_excluded_directory(tree):
 def test_walk_of_disallowed_root_yields_nothing(tree):
     root, outside = tree
     assert list(iter_allowed_files(outside, perimeter(root))) == []
+
+
+def test_exclusion_matches_windows_style_separators():
+    """Regression: backslash paths and patterns (Windows) are normalized to posix before glob matching."""
+    canonical = PureWindowsPath("C:/Users/moa/collection/archive/old.pdf")
+    assert _is_excluded(canonical, [r"C:\Users\moa\collection\archive\**"]) is True
+    assert _is_excluded(canonical, ["C:/Users/moa/collection/*.pdf"]) is False
+    assert _is_excluded(PureWindowsPath("C:/Users/moa/collection/notes.md"), ["C:/Users/moa/collection/*.md"]) is True
 
 
 def test_log_rejection_writes_timestamped_line(tree, tmp_path):

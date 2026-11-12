@@ -64,3 +64,26 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 ### Prochaine séance
 - **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion` via `save_conversion`, tables filles), branchement de `pipeline.run` sur `run_step0` puis les étapes suivantes.
 - Test en mode réel : voie `direct_read` testable localement (txt/md/html/docx/odt) ; voie OCR nécessite `MISTRAL_API_KEY` + accès réseau à l'API Mistral (absent du sandbox).
+
+---
+
+## 2026-11-12 — Séance 3 : correctif périmètre (séparateurs Windows) + plan de test manuel
+
+### Actions réalisées
+- **Signalement utilisateur** (poste Windows) : 3 échecs dans `tests/unit/test_perimeter.py` (tous liés aux exclusions glob), 74 passés.
+- **Cause racine démontrée** : `_is_excluded()` matchait `str(canonical)` (backslashes sous Windows) contre une regex de glob construite avec `/` uniquement → les exclusions ne matchaient jamais sous Windows (règle « exclusion > autorisation » inopérante), alors que `_is_under_root()` (pathlib) restait valide. Sous Linux, les 77 tests passaient.
+- **Correctif** dans `perimeter.py` v0.2.0 : normalisation POSIX des deux côtés — `canonical.as_posix()` dans `_is_excluded()`, et `pattern.replace("\\", "/")` dans `_glob_to_regex()`.
+- **Test de régression** `test_exclusion_matches_windows_style_separators` (PureWindowsPath, motifs backslash et slash) ajouté dans `tests/unit/test_perimeter.py` v0.2.0.
+- **Validation** : `python -m pytest` → **78 tests passent**.
+- **Plan de test manuel minimal** remis à l'utilisateur pour son poste (dossier autorisé + quelques documents, `init-db`/`load-tree`/`pipeline`, attendu, pièges).
+- Commit + push sur `dev` (demandé explicitement).
+
+### Décisions clés
+- Correction ponctuelle hors kanban (AGENTS.md §4), journalisée ici ; aucun mouvement de tâche sur le board Miro (pas de tâche concernée).
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Relancer `python -m pytest -q` sur le poste Windows (attendu : 78 passed) et le plan de test manuel.
+- **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion`, tables filles).

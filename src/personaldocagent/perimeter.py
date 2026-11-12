@@ -1,8 +1,8 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : perimeter.py
-# Version      : 0.1.0
-# Date         : 2026-11-11
+# Version      : 0.2.0
+# Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
@@ -24,7 +24,11 @@ DEFAULT_REJECTION_LOG = Path("data") / "rejections.log"
 
 
 def _glob_to_regex(pattern: str) -> re.Pattern:
-    """Convert a glob pattern to a regex: ** crosses directories, * and ? stay within one segment."""
+    """Convert a glob pattern to a regex: ** crosses directories, * and ? stay within one segment.
+
+    Backslashes are normalized to forward slashes so Windows-style patterns match on every OS.
+    """
+    pattern = pattern.replace("\\", "/")
     parts = []
     i = 0
     while i < len(pattern):
@@ -47,7 +51,7 @@ def _glob_to_regex(pattern: str) -> re.Pattern:
 
 
 def _is_excluded(canonical: Path, exclusions: list[str]) -> bool:
-    text = str(canonical)
+    text = canonical.as_posix()
     return any(_glob_to_regex(pattern).match(text) for pattern in exclusions)
 
 
