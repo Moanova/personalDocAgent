@@ -328,3 +328,17 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Validation utilisateur du mode interrogation en réel (`query --question` et REPL) ; clôture P1 du projet (conception §8) : revue de conception, bilan et clôture.
+
+---
+
+## 2026-11-12 — Séance 17 : documentation utilisateur (README)
+
+### Actions réalisées
+- `README.md` et `README.en.md` : section « Utilisation »/« Usage » réécrite — prérequis (`MISTRAL_API_KEY`, création de `config/perimeter_access.yaml` depuis l'exemple gitignoré avec `allowed_roots` en liste YAML, priorité des `exclusions`), options globales (`--config`, `--base`), tableau des 4 commandes avec leurs options (`init-db`, `load-tree`, `pipeline [--analyze]`, `query [--question "..."]` + REPL), et 3 exemples concrets (préparation, indexation avec analyse, interrogation one-shot et interactive).
+- Aucun test impacté (documentation seule) ; `python -m pytest -q` toujours vert (119 tests). Commit + push sur `dev`.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur du mode interrogation en réel ; clôture P1 du projet (conception §8).

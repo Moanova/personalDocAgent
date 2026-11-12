@@ -14,14 +14,44 @@ Standards de codage : scripts, classes, méthodes et variables en anglais avec d
 pip install -e ".[dev]"
 ```
 
-## Usage
+## Utilisation
+
+Deux modes d'exécution : **pipeline** (indexation par lots) et **query** (interrogation en langage naturel). Les commandes s'invoquent indifféremment via le script installé (`personaldocagent ...`) ou `python -m personaldocagent ...`.
+
+### Prérequis
+
+- La variable d'environnement `MISTRAL_API_KEY` doit être renseignée (étapes agentes : OCR, analyse de contenu, interrogation).
+- Créer `config/perimeter_access.yaml` à partir de `config/perimeter_access.yaml.exemple` (ce fichier est gitignoré) et y renseigner `allowed_roots` : liste YAML des dossiers autorisés, par ex. `allowed_roots: ['C:\Users\vous\Documents\pda-corpus']`. Les `exclusions` (globs, ex. `'C:\**'`) sont prioritaires sur les racines autorisées.
+
+### Options globales
+
+Placées avant la sous-commande :
+
+- `--config DIR` : répertoire des fichiers YAML de configuration (défaut : `./config`) ;
+- `--base PATH` : chemin de la base SQLite (défaut : `data/personaldocagent.db`).
+
+### Commandes
+
+| Commande | Options | Description |
+|---|---|---|
+| `init-db` | — | Crée la base SQLite à partir du schéma (`src/personaldocagent/db/schema.sql`). |
+| `load-tree` | — | Charge la graine YAML de l'arbre de classification (`config/classification.yaml`). |
+| `pipeline` | `--analyze` | Indexe les documents du périmètre autorisé : étape 0 acquisition (lecture directe ou OCR Mistral selon `config/routing.yaml`), étape 1 persistance. Avec `--analyze` : étape 2 analyse de contenu par le modèle, rattachement des émetteurs, écriture des fiches complètes et rapport de qualité. |
+| `query` | `--question "..."` | Interroge le fonds en langage naturel ; les réponses sont ancrées aux documents (doc_id + titre). Sans `--question`, session interactive (fin par `exit`, `quit` ou Ctrl-D). Historique dans `data/query_history.json`, journal des requêtes dans `data/query.log`. |
+
+### Exemples
 
 ```bash
-python -m personaldocagent --help
-personaldocagent init-db     # créer la base SQLite à partir du schéma
-personaldocagent load-tree   # charger la graine YAML de l'arbre de classification
-personaldocagent pipeline    # exécuter le pipeline d'indexation (étapes 0-7)
-personaldocagent query       # interroger le fonds en langage naturel
+# 1. Préparer la base et l'arbre de classification
+personaldocagent init-db
+personaldocagent load-tree
+
+# 2. Indexer le périmètre configuré, avec analyse de contenu
+personaldocagent pipeline --analyze
+
+# 3. Interroger le fonds
+personaldocagent query --question "Quel est le montant de ma facture EDF de mars 2026 ?"
+personaldocagent query   # session interactive
 ```
 
 ## Tests
