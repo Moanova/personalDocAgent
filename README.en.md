@@ -23,6 +23,34 @@ Two execution modes: **pipeline** (batch indexing) and **query** (natural-langua
 - The `MISTRAL_API_KEY` environment variable must be set (agent-driven steps: OCR, content analysis, querying).
 - Create `config/perimeter_access.yaml` from `config/perimeter_access.yaml.exemple` (this file is gitignored) and fill in `allowed_roots`: a YAML list of the allowed folders, e.g. `allowed_roots: ['C:\Users\you\Documents\pda-corpus']`. `exclusions` (globs, e.g. `'C:\**'`) take priority over allowed roots.
 
+### Perimeter examples (`config/perimeter_access.yaml`)
+
+`allowed_roots` and `exclusions` are **YAML lists** (not comma-separated values). Allowing a folder also allows all its subfolders. An `exclusion` **always wins** over an allowance: an excluded folder is never read, even under an allowed root. In globs, `**` (double star) crosses directories; a single `*` stays within one folder name. By default, anything not allowed is denied.
+
+```yaml
+# Example 1: allow one folder and everything it contains
+allowed_roots: ['C:\Users\you\Documents\pda-corpus']
+exclusions: []
+follow_symlinks: false
+```
+
+```yaml
+# Example 2: allow that same folder, except one of its subfolders
+allowed_roots: ['C:\Users\you\Documents\pda-corpus']
+exclusions: ['C:\Users\you\Documents\pda-corpus\drafts\**']
+follow_symlinks: false
+```
+
+```yaml
+# Example 3: allow only one folder on the drive
+# (deny by default does the rest; if you explicitly exclude the root,
+#  use 'C:\' and definitely not 'C:\**': since exclusions win,
+#  'C:\**' would also block the allowed folder)
+allowed_roots: ['C:\Users\you\Documents\pda-corpus']
+exclusions: ['C:\']
+follow_symlinks: false
+```
+
 ### Global options
 
 Placed before the subcommand:

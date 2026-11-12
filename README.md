@@ -23,6 +23,34 @@ Deux modes d'exécution : **pipeline** (indexation par lots) et **query** (inter
 - La variable d'environnement `MISTRAL_API_KEY` doit être renseignée (étapes agentes : OCR, analyse de contenu, interrogation).
 - Créer `config/perimeter_access.yaml` à partir de `config/perimeter_access.yaml.exemple` (ce fichier est gitignoré) et y renseigner `allowed_roots` : liste YAML des dossiers autorisés, par ex. `allowed_roots: ['C:\Users\vous\Documents\pda-corpus']`. Les `exclusions` (globs, ex. `'C:\**'`) sont prioritaires sur les racines autorisées.
 
+### Exemples de périmètre (`config/perimeter_access.yaml`)
+
+`allowed_roots` et `exclusions` sont des **listes YAML** (et non des valeurs séparées par des virgules). Autoriser un dossier autorise aussi tous ses sous-dossiers. Une `exclusion` est **toujours prioritaire** sur une autorisation : un dossier exclu n'est jamais lu, même sous une racine autorisée. Dans les globs, `**` (double étoile) traverse les dossiers ; une seule `*` reste dans un seul nom de dossier. Par défaut, tout ce qui n'est pas autorisé est refusé.
+
+```yaml
+# Exemple 1 : autoriser un dossier et tout ce qu'il contient
+allowed_roots: ['C:\Users\vous\Documents\pda-corpus']
+exclusions: []
+follow_symlinks: false
+```
+
+```yaml
+# Exemple 2 : autoriser ce même dossier, sauf l'un de ses sous-dossiers
+allowed_roots: ['C:\Users\vous\Documents\pda-corpus']
+exclusions: ['C:\Users\vous\Documents\pda-corpus\brouillons\**']
+follow_symlinks: false
+```
+
+```yaml
+# Exemple 3 : n'autoriser qu'un seul dossier du disque
+# (le refus par défaut fait le reste ; si vous excluez explicitement la racine,
+#  utilisez 'C:\' et surtout pas 'C:\**' : l'exclusion étant prioritaire,
+#  'C:\**' bloquerait aussi le dossier autorisé)
+allowed_roots: ['C:\Users\vous\Documents\pda-corpus']
+exclusions: ['C:\']
+follow_symlinks: false
+```
+
 ### Options globales
 
 Placées avant la sous-commande :
