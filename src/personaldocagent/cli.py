@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.7.0
+# Version      : 0.7.1
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -128,7 +128,10 @@ def main(argv: list[str] | None = None) -> int:
                         continue
                     if question.lower() in ("exit", "quit"):
                         break
-                    print(ask(question, history=history, conn=conn))
+                    try:
+                        print(ask(question, history=history, conn=conn))
+                    except Exception as exc:
+                        print(f"Erreur: {exc}")
         finally:
             save_history(DEFAULT_HISTORY_PATH, history)
             conn.close()

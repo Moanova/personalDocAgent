@@ -342,3 +342,18 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Validation utilisateur du mode interrogation en réel ; clôture P1 du projet (conception §8).
+
+---
+
+## 2026-11-12 — Séance 18 : correctifs validation réelle du mode query
+
+### Actions réalisées
+- **Diagnostic** (traceback utilisateur sur `personaldocagent query` en REPL) : deux bugs — (1) appel outil `search_documents` sans argument `filters` → `TypeError` non capté (seul `ValueError` l'était) → crash de la boucle ; (2) `message.content` retourné sous forme de liste de chunks (`ThinkChunk`/`TextChunk`) → `save_history` en échec (`json.dumps`).
+- **Correctifs** : `tools.py` v0.2.1 — `filters` optionnel (défaut : tous les documents) ; `agent.py` v0.2.1 — nouveau `_content_to_text()` (normalise le contenu assistant en texte, ne garde que les parties textuelles des chunks) appliqué à l'historique et à la réponse, et dispatch des outils captant `ValueError` **et** `TypeError` (renvoyés au modèle sous `{"error": ...}`, la boucle continue) ; `cli.py` v0.7.1 — en mode REPL, une erreur sur une question est affichée (`Erreur: ...`) sans tuer la session (mode one-shot inchangé : l'exception remonte).
+- **Tests** : TU-52 étendu (argument requis manquant → erreur renvoyée au modèle), TU-51 étendu (contenu en chunks → historique JSON-sérialisable + `save_history`/`load_history`), TU-46 étendu (`search_documents()` sans filtre → tous les documents). `python -m pytest -q` → **121 tests passent**. Commit + push sur `dev`.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Re-test utilisateur du REPL `query` ; puis clôture P1 du projet (conception §8).

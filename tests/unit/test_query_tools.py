@@ -63,7 +63,9 @@ def conn(tmp_path):
 
 
 def test_search_documents_filters(conn):
-    """TU-46: metadata filters (issuer, keyword, dates, type, status)."""
+    """TU-46: metadata filters (issuer, keyword, dates, type, status); no filters -> all documents."""
+    assert len(search_documents(conn)) == 3
+    assert len(search_documents(conn, {})) == 3
     by_issuer = search_documents(conn, SearchFilters(issuer_id=1))
     assert [r["doc_id"] for r in by_issuer] == [1]
     assert by_issuer[0]["issuer"] == "EDF"

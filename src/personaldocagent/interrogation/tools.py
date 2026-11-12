@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : interrogation/tools.py
-# Version      : 0.2.0
+# Version      : 0.2.1
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -51,12 +51,18 @@ def _build_where(filters: dict) -> tuple[str, list]:
     return where, params
 
 
-def search_documents(conn: sqlite3.Connection, filters: SearchFilters | dict) -> list[dict]:
+def search_documents(conn: sqlite3.Connection, filters: SearchFilters | dict | None = None) -> list[dict]:
     """Search on metadata (category, issuer, dates, type, status, keywords).
 
-    Accepts a SearchFilters dataclass or a plain dict (as sent by the agent's tool calls).
+    Accepts a SearchFilters dataclass or a plain dict (as sent by the agent's tool calls);
+    no filters means all documents.
     """
-    raw = filters if isinstance(filters, dict) else vars(filters)
+    if filters is None:
+        raw = {}
+    elif isinstance(filters, dict):
+        raw = filters
+    else:
+        raw = vars(filters)
     active = {k: v for k, v in raw.items() if v is not None}
     where, params = _build_where(active)
     rows = conn.execute(

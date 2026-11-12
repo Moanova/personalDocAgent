@@ -74,15 +74,15 @@ def test_ask_dispatches_tool_calls_and_returns_anchored_answer(conn, tmp_path, m
             ),
             _response(tool_calls=[_tool_call("call-2", "search_fulltext", {"expression": "EDF"})]),
             _response(
-                content="La facture EDF de mars 2026 s'\u00e9l\u00e8ve \u00e0 123,45 EUR [doc 1 - Facture EDF mars]."
+                content="La facture EDF de mars 2026 s'élève à 123,45 EUR [doc 1 - Facture EDF mars]."
             ),
         ]
     )
     history: list = []
     answer = ask(
-        "Combien a co\u00fbt\u00e9 la facture EDF de mars ?", history=history, conn=conn, client=client
+        "Combien a coûté la facture EDF de mars ?", history=history, conn=conn, client=client
     )
-    assert answer == "La facture EDF de mars 2026 s'\u00e9l\u00e8ve \u00e0 123,45 EUR [doc 1 - Facture EDF mars]."
+    assert answer == "La facture EDF de mars 2026 s'élève à 123,45 EUR [doc 1 - Facture EDF mars]."
     assert len(client.calls) == 3
     assert history[0]["role"] == "system"
     assert history[1]["role"] == "user"
@@ -105,14 +105,14 @@ def test_history_and_query_journal_are_persisted(conn, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     client = FakeClient([_response(content="Aucun document ne correspond.")])
     history: list = []
-    ask("Y a-t-il des relev\u00e9s bancaires ?", history=history, conn=conn, client=client)
+    ask("Y a-t-il des relevés bancaires ?", history=history, conn=conn, client=client)
     hist_path = tmp_path / "data" / "my_history.json"
     save_history(hist_path, history)
     assert hist_path.is_file()
     assert load_history(hist_path) == history
     assert load_history(tmp_path / "absent.json") == []
     journal = (tmp_path / "data" / "query.log").read_text(encoding="utf-8")
-    assert "Q: Y a-t-il des relev\u00e9s bancaires ?" in journal
+    assert "Q: Y a-t-il des relevés bancaires ?" in journal
     assert "A: Aucun document ne correspond." in journal
 
 
@@ -139,3 +139,37 @@ def test_tool_value_error_is_fed_back_to_the_model(conn, tmp_path, monkeypatch):
     answer = ask("lis le document 99", history=history, conn=conn, client=client)
     assert answer == "Ce document n'existe pas."
     assert json.loads(history[3]["content"]) == {"error": "unknown doc_id: 99"}
+
+
+def test_tool_missing_argument_is_fed_back_to_the_model(conn, tmp_path, monkeypatch):
+    """TU-52 (regression): tool called without a required argument -> TypeError caught,
+    sent back as {\"error\": ...}, the loop continues instead of crashing."""
+    monkeypatch.chdir(tmp_path)
+    client = FakeClient(
+        [
+            _response(tool_calls=[_tool_call("call-1", "read_document", {})]),
+            _response(content="Précise le numéro du document à lire."),
+        ]
+    )
+    history: list = []
+    answer = ask("lis un document", history=history, conn=conn, client=client)
+    assert answer == "Précise le numéro du document à lire."
+    error = json.loads(history[3]["content"])["error"]
+    assert "doc_id" in error
+
+
+def test_assistant_chunk_content_is_normalized_to_text(conn, tmp_path, monkeypatch):
+    """TU-51 (regression): a message content made of chunks (ThinkChunk/TextChunk) is stored
+    as plain text, so the history stays JSON-serializable and save_history() works."""
+    monkeypatch.chdir(tmp_path)
+    think_chunk = SimpleNamespace(thinking=[SimpleNamespace(text="réflexion interne")])
+    text_chunk = SimpleNamespace(text="Voici la réponse [doc 1 - Facture EDF mars].")
+    client = FakeClient([_response(content=[think_chunk, text_chunk])])
+    history: list = []
+    answer = ask("montant ?", history=history, conn=conn, client=client)
+    assert answer == "Voici la réponse [doc 1 - Facture EDF mars]."
+    assert history[2]["content"] == "Voici la réponse [doc 1 - Facture EDF mars]."
+    json.dumps(history)
+    hist_path = tmp_path / "data" / "h.json"
+    save_history(hist_path, history)
+    assert load_history(hist_path) == history

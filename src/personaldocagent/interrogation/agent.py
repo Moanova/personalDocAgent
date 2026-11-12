@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : interrogation/agent.py
-# Version      : 0.2.0
+# Version      : 0.2.1
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -104,6 +104,21 @@ _TOOLS = {
 }
 
 
+def _content_to_text(content) -> str:
+    """Normalize a message content (str, None or list of chunks) to plain text.
+
+    The SDK may return a list of chunks (TextChunk, ThinkChunk, ...): only the textual
+    parts are kept, so the history stays JSON-serializable and valid as an API payload.
+    """
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(c.text for c in content if isinstance(getattr(c, "text", None), str))
+    return str(content)
+
+
 def save_history(path: Path, history: list) -> None:
     """Persist the message history as JSON."""
     path = Path(path)
@@ -149,7 +164,7 @@ def ask(question: str, history: list | None = None, conn: sqlite3.Connection | N
         messages.append(
             {
                 "role": "assistant",
-                "content": message.content,
+                "content": _content_to_text(message.content),
                 "tool_calls": [
                     {
                         "id": tc.id,
@@ -161,7 +176,7 @@ def ask(question: str, history: list | None = None, conn: sqlite3.Connection | N
             }
         )
         if not tool_calls:
-            answer = message.content or ""
+            answer = _content_to_text(message.content)
             _log_query(question, answer)
             return answer
         for tc in tool_calls:
@@ -171,7 +186,7 @@ def ask(question: str, history: list | None = None, conn: sqlite3.Connection | N
             args = json.loads(tc.function.arguments or "{}")
             try:
                 result = _TOOLS[name](conn, **args)
-            except ValueError as exc:
+            except (ValueError, TypeError) as exc:
                 result = {"error": str(exc)}
             messages.append(
                 {
