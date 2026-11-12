@@ -27,6 +27,19 @@ Fondations communes à tout le pipeline (cf. `docs/conception/conception.md`, §
 
 ---
 
+## E2 — Étape 0 : acquisition multi-format
+Première brique du pipeline (cf. `docs/conception/conception.md` §4 et §5, `modèleTraitement.mmd`) : conversion des documents en texte par lecture directe ou handoff OCR, avant toute analyse. Les textes extraits sont persistés dans `conversion` pour ne jamais re-payer une conversion.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T2.1 | Voie lecture directe (TXT, MD, HTML nettoyé, DOCX, ODT) | T1.1, T1.4, T1.5 |
+| T2.2 | Voie OCR (mistral-ocr-latest) + persistance dans `conversion` | T1.1, T1.2, T1.5 |
+| T2.3 | Orchestration de l'étape 0 dans `pipeline.py` (3 contrôles + découpage des documents longs) | T1.4, T2.1, T2.2 |
+| T2.4 | Commande CLI `pipeline` | T2.3 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
@@ -45,6 +58,10 @@ T1.3
 T1.4
 T1.5
 T1.6
+T2.1
+T2.2
+T2.3
+T2.4
 
 
 ## Annulé
@@ -121,3 +138,27 @@ T1.6
 - **Choix acté** : le schéma SQL (tables/colonnes) est anglicisé (`issuer`, `category`, `source_file`, `status`…) ; les équivalents français sont conservés entre parenthèses dans `docs/conception/conception.md` et `docs/conception/modèleDonnées.mmd`.
 - **Critères d'acceptation** : `python -m pytest` passe intégralement après renommage.
 - **Dépendances** : T1.1-T1.5.
+
+## T2.1 — Voie lecture directe
+- **Objectif** : convertir en texte les formats lisibles sans appel API (cf. `conception.md` §5 : TXT, Markdown, HTML, DOCX, ODT).
+- **Livrables** : `acquisition/direct_read.py` — `read_direct(path) -> AcquisitionResult` ; dispatch par extension ; TXT/MD lus en UTF-8 ; HTML nettoyé via BeautifulSoup (texte du document, scripts et styles exclus) ; DOCX via python-docx (paragraphes et tableaux) ; ODT via odfpy ; `model=None` (pas de modèle), `source_file` en chemin canonique, `conversion_date` en ISO 8601 UTC.
+- **Critères d'acceptation** : les 5 extensions produisent un `AcquisitionResult` au contrat respecté ; aucun appel réseau ; tests unitaires autonomes (fixtures `tmp_path`).
+- **Dépendances** : T1.1, T1.4, T1.5.
+
+## T2.2 — Voie OCR et persistance
+- **Objectif** : convertir PDF et images via `mistral-ocr-latest` (Markdown par page avec score de confiance) et persister le texte extrait dans `conversion` (cf. `conception.md` §6 et §9.5).
+- **Livrables** : `acquisition/ocr.py` — `convert(path) -> AcquisitionResult` (`model="mistral-ocr-latest"`) ; helper d'insertion dans `conversion` (clé primaire `doc_id` + `model`, insertion idempotente) appelé lors de l'écriture de la fiche document.
+- **Critères d'acceptation** : appel API mocké en test ; une conversion persistée est relue sans nouvel appel ; le retraitement d'un même document ne re-déclenche pas l'OCR.
+- **Dépendances** : T1.1, T1.2, T1.5.
+
+## T2.3 — Orchestration de l'étape 0
+- **Objectif** : enchaîner les trois contrôles déterministes de T1.4 puis la bonne voie de conversion, avec découpage des documents longs (cf. `conception.md` §4).
+- **Livrables** : `pipeline.py` — `run(config_dir, root)` itère `iter_allowed_files`, applique `run_step0_checks` (rejets journalisés sans lecture du fichier), dispatche vers `read_direct` ou `ocr.convert` selon la route, découpe les textes dépassant la taille de chunk fixée, retourne la liste des `AcquisitionResult`.
+- **Critères d'acceptation** : fichier hors périmètre / format inconnu / duplicata sauté et journalisé sans être lu ; fichier accepté produit un résultat de la bonne voie ; texte long découpé en segments.
+- **Dépendances** : T1.4, T2.1, T2.2.
+
+## T2.4 — Commande CLI `pipeline`
+- **Objectif** : rendre la sous-commande `pipeline` de `cli.py` fonctionnelle.
+- **Livrables** : branchement de `cli.py` sur `pipeline.run` (`--config`, `--base`) avec rapport des résultats (acceptés / rejetés et raisons).
+- **Critères d'acceptation** : `python -m personaldocagent pipeline --config config --base data/personaldocagent.db` s'exécute sur un petit corpus de test.
+- **Dépendances** : T2.3.

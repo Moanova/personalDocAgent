@@ -27,3 +27,40 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 
 ### Prochaine séance
 - EPIC suivante : **étape 0 acquisition** — voie `direct_read` d'abord (TXT, MD, HTML nettoyé via BeautifulSoup, DOCX via python-docx, ODT via odfpy), testable sans appel API ; puis voie OCR (`mistral-ocr-latest`) avec persistance dans `conversion`.
+
+---
+
+## 2026-11-12 — Séance 2 : création de l'EPIC E2 (étape 0 acquisition) + plan et implémentation de T2.1 et T2.2
+
+### Actions réalisées
+- **EPIC E2** créée dans `docs/projet/kanban.md` (étape 0 acquisition, cf. `conception.md` §4/§5) : T2.1 voie lecture directe, T2.2 voie OCR + persistance dans `conversion`, T2.3 orchestration de l'étape 0 dans `pipeline.py`, T2.4 commande CLI `pipeline`.
+- **Plan T2.1** établi et documenté dans `docs/tasks/T2.1_lecture_directe.md` : dispatch par extension ; lecteurs TXT/MD en UTF-8, HTML nettoyé via BeautifulSoup, DOCX via python-docx, ODT via odfpy ; contrat `AcquisitionResult` (`model=None`, `source_file` canonique, `conversion_date` ISO 8601 UTC) ; erreurs de lecture en `ValueError` contextualisé.
+- **`tests/plan_tests.md` créé** (référencé par AGENTS.md mais absent) : conventions TU/TI/TB + entrées T2.1 (TU-01 à TU-08, TI-01).
+- **T2.1 implémentée** : `acquisition/direct_read.py` v0.2.0 — table `_READERS` par extension (insensible à la casse), lecteurs TXT/MD (UTF-8), HTML (BeautifulSoup, `script`/`style` exclus), DOCX (python-docx, paragraphes + tableaux), ODT (odfpy) ; rejets (extension hors voie, fichier corrompu) en `ValueError` avec le chemin en contexte.
+- **Tests T2.1 écrits** : `tests/unit/test_direct_read.py` (TU-01 à TU-08, aucun appel réseau) + `tests/integration/test_step0_direct_read.py` (TI-01). Le module d'intégration a été renommé (`test_step0_direct_read.py`) : conflit de basename pytest entre `unit/` et `integration/` sans `__init__.py`.
+- **Validation agent (étape 5)** : `python -m pytest` → **60 tests passent** (49 existants + 11 nouveaux) ; T2.1 déplacée « En revue » dans `docs/projet/kanban.md`.
+- **Plan T2.2** établi et documenté dans `docs/tasks/T2.2_voie_ocr.md` : client Mistral paresseux (`MISTRAL_API_KEY`, injectable pour les tests) ; `convert(path)` = `files.upload(purpose="ocr")` → `ocr.process(model="mistral-ocr-latest", document={"type": "file", "file_id": ...})` (SDK mistralai 3.4.0 vérifié) → `AcquisitionResult(route="ocr", model="mistral-ocr-latest")` ; helpers `save_conversion` (INSERT OR IGNORE, idempotent) / `load_conversion` dans `conversion` ; tests TU-09 à TU-14 + TI-02, 100 % hors ligne. T2.2 placée « En cours ».
+- **T2.2 implémentée** : `acquisition/ocr.py` v0.2.0 — `_client()` paresseux (`MISTRAL_API_KEY`, `RuntimeError` explicite si absente) ; `convert(path, client=None)` = `files.upload(purpose="ocr")` → `ocr.process(model="mistral-ocr-latest", document={"type": "file", "file_id": ...})` → `AcquisitionResult(route="ocr", model="mistral-ocr-latest")` (pages triées par `index`, markdown joint par `\n\n`), erreur API enveloppée en `ValueError` ; `save_conversion` (INSERT OR IGNORE, idempotent) / `load_conversion` dans `conversion` (triggers FTS5 automatiques).
+- **Tests T2.2 écrits** : `tests/unit/test_ocr.py` (TU-09 à TU-14, client fake, zéro appel réseau) + `tests/integration/test_ocr_conversion.py` (TI-02 : routage `.pdf` → `ocr` + persistance + FTS5).
+- **Validation agent (étape 5)** : `python -m pytest` → **67 tests passent** (60 + 7 nouveaux) ; T2.2 déplacée « En revue » dans `docs/projet/kanban.md`.
+- **Plan T2.3** établi dans `docs/tasks/T2.3_orchestration_etape0.md` : `acquire()` = `iter_allowed_files` + `run_step0_checks` + dispatch `direct_read`/`ocr` (convertisseur OCR injectable) + rejet `conversion_failed` journalisé sans arrêter le lot ; `chunk_text()` (découpage documents longs, frontières de paragraphes) ; `run(config_dir, base)` agrège toutes les `allowed_roots`. Tests TU-15 à TU-19 + TI-03. T2.3 placée « En cours ».
+- **Plan T2.4** établi dans `docs/tasks/T2.4_cli_pipeline.md` : branche `pipeline` dans `cli.py` → `pipeline.run_step0` + rapport par voie ; `init_db` idempotent ; tests TU-20 + TI-04 avec config tmp et `chdir` isolé (journal `data/rejections.log`).
+- **T2.3 implémentée** : `pipeline.py` v0.2.0 — `acquire()` (`iter_allowed_files` + `run_step0_checks` + dispatch `direct_read`/`ocr` avec convertisseur injectable, rejets journalisés, `conversion_failed` sans arrêt du lot), `chunk_text()` (`DEFAULT_CHUNK_CHARS=8000`, frontières de paragraphes, découpage dur), `run_step0(config_dir, base)` ; le squelette `run(...) -> list[WriteResult]` est conservé (contrat vérifié par `test_contracts.py`). Tests : `tests/unit/test_pipeline.py` (TU-15 à TU-19) + `tests/integration/test_step0_pipeline.py` (TI-03).
+- **T2.4 implémentée** : `cli.py` v0.2.0 — branche `pipeline` → `run_step0(args.config, args.base)` + rapport par voie (`Counter` des routes) ; `tests/unit/test_cli.py` : la commande non implémentée testée passe de `pipeline` à `query`. Tests : `tests/unit/test_cli_pipeline.py` (TU-20) + `tests/integration/test_cli_run.py` (TI-04).
+- **Validation agent (étape 5)** : `python -m pytest` → **77 tests passent** (67 + 10 nouveaux) ; T2.3 et T2.4 déplacées « En revue » dans `docs/projet/kanban.md`.
+
+### Décisions clés
+- T2.1 en premier : voie 100 % déterministe, testable sans appel API (cohérent avec la clôture de la séance 1).
+- T2.2 : persistance dans `conversion` via un helper d'insertion idempotente (clé `doc_id` + `model`), appelé à l'écriture de la fiche document.
+- T2.3 : orchestration = `iter_allowed_files` + `run_step0_checks` (T1.4) + dispatch des deux voies + découpage des documents longs.
+- Environnement : installation editable `pip install -e ".[dev]"` (pytest, python-docx, odfpy étaient absents du sandbox) ; baseline 49 tests verts avant modification.
+- T2.1 à T2.4 validées par l'utilisateur (étape 6) : déplacées « Terminé » dans le kanban, puis **commit + push sur `dev`** (demandé explicitement, conforme à la règle AGENTS.md §3.C).
+- Le squelette `pipeline.run(...) -> list[WriteResult]` est un contrat testé (T1.5) : l'étape 0 a été livrée via `run_step0(...) -> list[AcquisitionResult]` sans modifier ce contrat.
+- Scores de confiance OCR par page non persistés : ni `AcquisitionResult` ni la table `conversion` n'ont de colonne dédiée — point de conception ouvert, hors périmètre de T2.2.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- **EPIC E3** : étape 1 — description formelle Dublin Core + écriture en base (`document`, `conversion` via `save_conversion`, tables filles), branchement de `pipeline.run` sur `run_step0` puis les étapes suivantes.
+- Test en mode réel : voie `direct_read` testable localement (txt/md/html/docx/odt) ; voie OCR nécessite `MISTRAL_API_KEY` + accès réseau à l'API Mistral (absent du sandbox).

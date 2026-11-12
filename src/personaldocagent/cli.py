@@ -1,14 +1,15 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.1.0
-# Date         : 2026-11-11
+# Version      : 0.2.0
+# Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
 """Command-line interface of personalDocAgent."""
 
 import argparse
+from collections import Counter
 from pathlib import Path
 
 
@@ -33,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("init-db", help="Create the SQLite database from the schema (T1.2).")
     subcommands.add_parser("load-tree", help="Load the YAML seed of the classification tree (T1.3).")
-    subcommands.add_parser("pipeline", help="Run the indexing pipeline (steps 0-7).")
+    subcommands.add_parser("pipeline", help="Run the indexing pipeline (step 0 acquisition for now).")
     subcommands.add_parser("query", help="Query the collection in natural language.")
 
     args = parser.parse_args(argv)
@@ -58,6 +59,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{n} categories loaded from {seed}")
         return 0
 
+    if args.command == "pipeline":
+        from .perimeter import DEFAULT_REJECTION_LOG
+        from .pipeline import run_step0
+
+        results = run_step0(args.config, args.base)
+        by_route = Counter(result.route for result in results)
+        report = ", ".join(f"{count} {route}" for route, count in sorted(by_route.items()))
+        print(f"Step 0 acquisition: {len(results)} document(s) acquired ({report or 'none'})")
+        print(f"Rejections journalled in {DEFAULT_REJECTION_LOG}")
+        return 0
+
     raise NotImplementedError(
-        f"Command '{args.command}': to be implemented in a later task of EPIC E1."
+        f"Command '{args.command}': to be implemented in a later EPIC (query mode)."
     )

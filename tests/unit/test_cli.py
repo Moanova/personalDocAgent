@@ -31,9 +31,9 @@ def test_unknown_command_is_rejected():
 
 
 def test_unimplemented_command_raises_not_implemented():
-    """A not-yet-implemented subcommand raises NotImplementedError."""
+    """A not-yet-implemented subcommand raises NotImplementedError (query, later EPIC)."""
     with pytest.raises(NotImplementedError):
-        main(["pipeline"])
+        main(["query"])
 
 
 def test_init_db_creates_the_database(tmp_path):
