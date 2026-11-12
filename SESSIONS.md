@@ -357,3 +357,18 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Re-test utilisateur du REPL `query` ; puis clôture P1 du projet (conception §8).
+
+---
+
+## 2026-11-12 — Séance 19 : remarque de conception notée (whitelist query codée en dur)
+
+### Actions réalisées
+- **Remarque notée (sans évolution pour l'instant)** : la liste blanche du mode interrogation est codée en dur dans `interrogation/tools.py` (colonnes des SELECT, clés de filtres de `_build_where`, regex `_SNAKE_KEY` de l'agrégat) ; aucun YAML n'est lu côté query. `source_file` reste exclu par conception (règle « aucun chemin exposé », `prompts/query.py`). Point ouvert : si besoin, on pourra envisager ultérieurement d'exposer davantage de champs en lecture (`attributes`, `confidence`, sujets, catégories) ou de piloter la whitelist par config — **à rediscuter, non retenu pour l'instant**.
+- Question connexe de l'utilisateur : moyen le plus simple d'interroger la base en SQL → réponse : `python -m sqlite3 data/personaldocagent.db` (CLI sqlite intégrée à Python ≥ 3.12), ou `sqlite3 data/personaldocagent.db` si le CLI sqlite est installé, ou DB Browser for SQLite (GUI) ; en lecture seule garantie via URI `file:...?mode=ro`.
+- Commit + push sur `dev` (documentation seule).
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur du mode interrogation en réel ; clôture P1 du projet (conception §8).
