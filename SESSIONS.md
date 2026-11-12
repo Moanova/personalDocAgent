@@ -372,3 +372,18 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Validation utilisateur du mode interrogation en réel ; clôture P1 du projet (conception §8).
+
+---
+
+## 2026-11-12 — Séance 20 : fin de séance, point noté (renommage de scripts)
+
+### Actions réalisées
+- **Point noté pour plus tard (pas d'action maintenant)** : l'utilisateur va relire le code pour appropriation et demandera probablement un **renommage de scripts pour lisibilité** — notamment le doublon `analysis.py` : `src/personaldocagent/analysis.py` (logique de l'étape 2) vs `src/personaldocagent/prompts/analysis.py` (prompt versionné de l'analyse). À traiter sur demande explicite, avec renommage des imports et tests associés.
+- Rappel de la feuille de route : clôture P1 (conception §8) après les tests approfondis du mode interrogation ; P2 (extraction typée / embeddings) documenté mais non engagé ; remarque séance 19 (whitelist query) en attente.
+- Commit + push sur `dev` (documentation seule). Fin de séance.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Tests approfondis du mode interrogation par l'utilisateur ; relecture du code et demande éventuelle de renommage ; puis clôture P1.
