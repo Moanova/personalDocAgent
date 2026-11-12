@@ -103,11 +103,9 @@ Recherche et question-réponse sur le fonds, distinct du pipeline par lots (cf. 
 # Tableau du kanban
 
 ## À faire
-T7.2
-T7.3
+
 
 ## En cours
-T7.1
 
 
 ## En revue
@@ -123,6 +121,9 @@ T5.3
 T6.1
 T6.2
 T6.3
+T7.1
+T7.2
+T7.3
 
 
 ## Terminé

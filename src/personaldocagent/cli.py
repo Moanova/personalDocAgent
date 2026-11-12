@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : cli.py
-# Version      : 0.6.0
+# Version      : 0.7.0
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -41,7 +41,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Also run step 2 (agent-driven content analysis) on the persisted texts.",
     )
-    subcommands.add_parser("query", help="Query the collection in natural language.")
+    query_parser = subcommands.add_parser("query", help="Query the collection in natural language.")
+    query_parser.add_argument(
+        "--question",
+        type=str,
+        default=None,
+        help="One-shot question; without it, an interactive REPL is started.",
+    )
 
     args = parser.parse_args(argv)
 
@@ -101,6 +107,31 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    raise NotImplementedError(
-        f"Command '{args.command}': to be implemented in a later EPIC (query mode)."
-    )
+    if args.command == "query":
+        from .db.connection import connect
+        from .interrogation.agent import DEFAULT_HISTORY_PATH, ask, load_history, save_history
+
+        conn = connect(args.base)
+        history = load_history(DEFAULT_HISTORY_PATH)
+        try:
+            if args.question is not None:
+                print(ask(args.question, history=history, conn=conn))
+            else:
+                print("Interactive query mode (type 'exit' or 'quit', or Ctrl-D, to leave).")
+                while True:
+                    try:
+                        question = input("Question> ").strip()
+                    except (EOFError, KeyboardInterrupt):
+                        print()
+                        break
+                    if not question:
+                        continue
+                    if question.lower() in ("exit", "quit"):
+                        break
+                    print(ask(question, history=history, conn=conn))
+        finally:
+            save_history(DEFAULT_HISTORY_PATH, history)
+            conn.close()
+        return 0
+
+    raise NotImplementedError(f"Command '{args.command}' is not implemented.")

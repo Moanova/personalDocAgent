@@ -312,3 +312,19 @@ Dans mistralai 3.x, `AssistantMessage.content` est `str | list[TextChunk]` : ave
 
 ### Prochaine séance
 - Implémentation T7.1-T7.3 ; `python -m pytest` (attendu : 110 + nouveaux) ; commit/push. Puis clôture P1 du projet (conception §8).
+
+---
+
+## 2026-11-12 — Séance 16 : implémentation EPIC E7 (mode interrogation)
+
+### Actions réalisées
+- **T7.1** : `interrogation/tools.py` v0.2.0 — 4 outils lecture seule (`search_documents`, `search_fulltext` FTS5 + `snippet()`, `read_document` avec troncature à 4000 car., `aggregate` whitelist snake_case + `json_extract` sur `attributes`) ; `source_file` jamais exposé. Correctif : `search_documents` accepte aussi un dict de filtres (appels tool envoyés par le modèle). TU-46 à TU-49 (`tests/unit/test_query_tools.py`).
+- **T7.2** : `prompts/query.py` v0.1.0 (prompt système versionné : ancrage doc_id + titre obligatoire, français, aucun chemin de fichier exposé) ; `interrogation/agent.py` v0.2.0 — `ask(question, history, conn, client)` : boucle `chat.complete` + function calling (4 outils déclarés), dispatch vers `tools.py`, erreur d'un outil renvoyée au modèle (`{"error": ...}`), tool inconnu → `ValueError`, boucle bornée (`MAX_TURNS = 10`), historique = liste Python persistable (`save_history`/`load_history`, JSON), journal `data/query.log`, client injectable (même `_client()` mémoïsé que `analysis.py`). TU-50 à TU-52 (`tests/unit/test_query_agent.py`, client fake à réponses en file).
+- **T7.3** : `cli.py` v0.7.0 — sous-commande `query` : `--question "..."` one-shot, sinon REPL interactif (`input()`, sortie par exit/quit ou Ctrl-D) ; historique chargé/sauvegardé dans `data/query_history.json`. `test_cli.py` mis à jour (`query` n'est plus `NotImplementedError` : test du `--help`). TI-09 (`tests/integration/test_query_cli.py`) : base seedée + client fake injecté → réponse ancrée `[doc 1 - ...]`, historique et journal écrits.
+- **Validation** : `python -m pytest -q` → **119 tests passent** (110 + 9 nouveaux) ; `python -m personaldocagent query --help` OK. T7.1-T7.3 « En revue » dans le kanban. Commit + push sur `dev`.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Validation utilisateur du mode interrogation en réel (`query --question` et REPL) ; clôture P1 du projet (conception §8) : revue de conception, bilan et clôture.

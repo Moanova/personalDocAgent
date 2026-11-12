@@ -30,10 +30,12 @@ def test_unknown_command_is_rejected():
     assert exc.value.code != 0
 
 
-def test_unimplemented_command_raises_not_implemented():
-    """A not-yet-implemented subcommand raises NotImplementedError (query, later EPIC)."""
-    with pytest.raises(NotImplementedError):
-        main(["query"])
+def test_query_help_lists_question_option(capsys):
+    """query is implemented: --help exits 0 and documents the --question option."""
+    with pytest.raises(SystemExit) as exc:
+        main(["query", "--help"])
+    assert exc.value.code == 0
+    assert "--question" in capsys.readouterr().out
 
 
 def test_init_db_creates_the_database(tmp_path):
