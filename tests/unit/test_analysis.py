@@ -37,12 +37,12 @@ class _FakeClient:
         self.payload = payload
         self.calls = []
 
-        def create(*, model, messages, response_format=None):
+        def complete(*, model, messages, response_format=None):
             self.calls.append({"model": model, "messages": messages, "response_format": response_format})
             content = payload if isinstance(payload, str) else json.dumps(payload)
             return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
 
-        self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+        self.chat = SimpleNamespace(complete=complete)
 
 
 def test_analyze_happy_path():
@@ -99,6 +99,14 @@ def test_analyze_bad_confidence_or_invalid_json_rejected():
         analyze("texte", CATEGORIES, POLICY, client=_FakeClient({**VALID_PAYLOAD, "confidence": 1.5}))
     with pytest.raises(ValueError, match="Analysis completion failed"):
         analyze("texte", CATEGORIES, POLICY, client=_FakeClient("not json at all"))
+
+
+def test_sdk_chat_api_shape():
+    """Guard against SDK drift: the installed mistralai must expose Chat.complete (not chat.completions)."""
+    from mistralai.client.chat import Chat
+
+    assert hasattr(Chat, "complete")
+    assert not hasattr(Chat, "completions")
 
 
 def test_category_ids_from_export_and_active_check(tmp_path):

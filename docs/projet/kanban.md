@@ -64,12 +64,26 @@ Pour chaque texte persisté dans `conversion`, produire via une complétion Mist
 
 ---
 
+## E5 — Rapprochement émetteur (boucle de contrôle d'autorité)
+Rapprocher l'`issuer_candidate` produit par l'étape 2 (E4) au référentiel `issuer` (cf. `conception.md` §4, `modèleTraitement.mmd` E3A-E3C) : recherche SQL **exacte** (label normalisé) puis **approximative** (LIKE) ; issues `known` / `ambiguous` / `unknown` (contrat `IssuerMatch`). Création d'un nouvel émetteur uniquement après validation : automatique si la confiance ≥ `auto_confidence_threshold` (`analysis_policy.yaml`), sinon file d'attente (`issuer_id` NULL, validation humaine ultérieure). Un émetteur connu renseigne `document.issuer_id`.
+
+| Tâche | Titre | Dépendances |
+|---|---|---|
+| T5.1 | `match_issuer()` dans `issuers.py` : normalisation + exact puis LIKE → `IssuerMatch` (known/ambiguous/unknown) | T1.2, T1.5 |
+| T5.2 | Création idempotente + règle de confiance : `create_issuer`, `resolve_issuer` (auto si confiance ≥ seuil, sinon file d'attente) | T1.2, T4.1, T5.1 |
+| T5.3 | Branchement pipeline : rapprochement après étape 2 + `UPDATE document.issuer_id` si connu + rapport CLI (connus/créés/en attente) + TI | T4.3, T5.1, T5.2 |
+
+
+---
+
 # Tableau du kanban
 
 ## À faire
-
+T5.2
+T5.3
 
 ## En cours
+T5.1
 
 
 ## En revue
@@ -228,3 +242,21 @@ T2.4
 - **Livrables** : `pipeline.py` — `analyze_base(config_dir, base, client=None) -> list[AnalysisRecord]` (jointure `document`/`conversion`, texte découpé via `chunk_text` si long, `analyze` par document) ; `cli.py` — option `--analyze` sur la sous-commande `pipeline` (rapport : N analysés).
 - **Critères d'acceptation** : TI-06 ; `pipeline --analyze` sur corpus tmp avec client fake.
 - **Dépendances** : T3.2, T4.1, T4.2.
+
+## T5.1 — `match_issuer()` (exact puis approximatif)
+- **Objectif** : rapprocher un candidat émetteur au référentiel `issuer` (recherche SQL exacte puis LIKE, `conception.md` §4).
+- **Livrables** : `issuers.py` — `match_issuer(conn, candidate) -> IssuerMatch` : normalisation (espaces/casse) ; hit exact → `known` ; LIKE : 1 hit → `known`, plusieurs → `ambiguous` (`proposed_label=candidate`), 0 → `unknown`.
+- **Critères d'acceptation** : TU-34 à TU-37.
+- **Dépendances** : T1.2, T1.5.
+
+## T5.2 — Création d'émetteur et règle de confiance
+- **Objectif** : créer un émetteur proprement, sans prolifération de quasi-doublons (« EDF » / « EDF SA »), selon le réglage de confiance (`conception.md` §4 : automatique si confiance élevée, validé sinon).
+- **Livrables** : `issuers.py` — `create_issuer(conn, label, linked_category=None) -> int` (idempotent, `label UNIQUE`) ; `resolve_issuer(conn, match, candidate, confidence, policy) -> IssuerMatch` : `known` → inchangé ; `unknown` + confiance ≥ `policy.auto_confidence_threshold` → création automatique puis `known` ; sinon reste `unknown` (file d'attente : `issuer_id` NULL).
+- **Critères d'acceptation** : TU-38 (seuil haut/bas, idempotence).
+- **Dépendances** : T1.2, T4.1, T5.1.
+
+## T5.3 — Branchement pipeline + rapport
+- **Objectif** : enchaîner le rapprochement après l'étape 2 et renseigner `document.issuer_id` quand l'émetteur est connu.
+- **Livrables** : `pipeline.py` — après `analyze_base`, pour chaque couple (doc_id, AnalysisRecord) : `match_issuer` + `resolve_issuer` (confiance du record, policy) + `UPDATE document SET issuer_id` si `known` ; `cli.py` — rapport « issuers: K known, C created, P pending » ; tests TI-07.
+- **Critères d'acceptation** : TI-07 (émetteur connu renseigné, inconnu en attente avec `issuer_id` NULL).
+- **Dépendances** : T4.3, T5.1, T5.2.

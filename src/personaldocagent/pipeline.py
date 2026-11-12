@@ -1,14 +1,15 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : pipeline.py
-# Version      : 0.4.0
+# Version      : 0.4.1
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
 # -------------------------------------------------------------------
-"""Deterministic orchestration of the pipeline (step 0 acquisition for now)."""
+"""Deterministic orchestration of the pipeline (steps 0-2: acquisition, persistence, analysis)."""
 
 import sqlite3
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -160,7 +161,10 @@ def analyze_base(config_dir: Path, base: Path, client=None) -> list[AnalysisReco
         records = []
         for row in rows:
             segments = chunk_text(row["extracted_text"])
-            records.append(analyze(segments[0] if segments else "", categories, config.policy, client))
+            try:
+                records.append(analyze(segments[0] if segments else "", categories, config.policy, client))
+            except ValueError as exc:
+                print(f"Step 2 analysis: doc_id={row['doc_id']} skipped ({exc})", file=sys.stderr)
     finally:
         conn.close()
     return records

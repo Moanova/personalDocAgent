@@ -64,3 +64,10 @@ Les tests de l'EPIC E1 (49 tests) ont été écrits avant ce plan et ne portent 
 | TU-32 | T4.2 | le prompt transmis contient l'export aplati de l'arbre + `max_keywords` + convention (appel mocké inspecté) | `tests/unit/test_analysis.py` |
 | TU-33 | T4.1 | confiance hors [0,1] ou réponse JSON invalide → `ValueError` | `tests/unit/test_analysis.py` |
 | TI-06 | T4.3 | `pipeline --analyze` de bout en bout : corpus tmp + client fake → un `AnalysisRecord` par document persisté | `tests/integration/test_pipeline_analyze.py` |
+
+| ID | Tâche | Description | Fichier de test |
+|---|---|---|---|
+| TU-34 | T5.1 | `match_issuer` : hit exact (label normalisé, casse/espaces) → `known` avec le bon `issuer_id` | `tests/unit/test_issuers.py` |
+| TU-35 | T5.1 | LIKE approximatif à 1 hit → `known` ; TU-36 : plusieurs hits → `ambiguous` (`proposed_label`) ; TU-37 : 0 hit → `unknown` | `tests/unit/test_issuers.py` |
+| TU-38 | T5.2 | `resolve_issuer` : confiance ≥ seuil → création auto (`known`) ; < seuil → `unknown` (file d'attente) ; `create_issuer` idempotent | `tests/unit/test_issuers.py` |
+| TI-07 | T5.3 | Bout en bout : émetteur connu → `document.issuer_id` renseigné ; candidat inconnu + confiance faible → `issuer_id` NULL | `tests/integration/test_pipeline_issuers.py` |

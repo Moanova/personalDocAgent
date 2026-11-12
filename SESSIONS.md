@@ -156,3 +156,50 @@ Journal des actions, décisions et blocages par séance (repris automatiquement 
 ### Prochaine séance
 - Validation utilisateur de T3.1-T3.3 et T4.1-T4.3 (« Terminé » + Miro « Fait » si validé).
 - **EPIC E5** : rapprochement émetteur (`issuers.py`) — recherche SQL exacte puis approximative (LIKE), statuts connu / ambigu / inconnu, file d'attente ; puis **E6** écriture complète étape 4 (tables filles) et **E7** mode interrogation (4 outils + CLI `query`).
+
+---
+
+## 2026-11-12 — Séance 7 : définition de l'EPIC E5 (rapprochement émetteur)
+
+### Actions réalisées
+- **EPIC E5** enregistrée dans `docs/projet/kanban.md` : rapprochement de l'`issuer_candidate` (E4) au référentiel `issuer` — exact (label normalisé) puis LIKE ; issues `known`/`ambiguous`/`unknown` (contrat `IssuerMatch`) ; création auto si confiance ≥ `auto_confidence_threshold`, sinon file d'attente (`issuer_id` NULL) ; émetteur connu → `document.issuer_id` renseigné. Tâches : **T5.1** `match_issuer()` (« En cours »), **T5.2** `create_issuer`/`resolve_issuer` (règle de confiance), **T5.3** branchement pipeline + rapport CLI (« À faire »).
+- **Plan de tests** : TU-34 à TU-38 + TI-07 ajoutés dans `tests/plan_tests.md` (`tests/unit/test_issuers.py`, `tests/integration/test_pipeline_issuers.py`).
+- Squelette vérifié compatible : `issuers.match_issuer(conn, candidate) -> IssuerMatch`.
+- Board Miro synchronisé (T5.1 « En cours », T5.2/T5.3 « À faire »).
+
+### Décisions clés
+- Sémantique du matching : exact → `known` ; LIKE 1 hit → `known` ; plusieurs → `ambiguous` ; 0 → `unknown`.
+- Pas de validation humaine câblée pour l'instant : `unknown` = file d'attente (`issuer_id` NULL), résolution ultérieure.
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Plans détaillés puis implémentation de T5.1-T5.3 ; `python -m pytest` (attendu : 96 + nouveaux) ; puis **EPIC E6** (écriture complète étape 4) et **E7** (mode interrogation).
+
+---
+
+## 2026-11-12 — Séance 8 : correctif appel chat (SDK mistralai 3.x) après essai réel
+
+### Signalement utilisateur (poste Windows, run réel)
+`python -m personaldocagent pipeline --analyze` : étapes 0-1 OK (**115 documents acquis et écrits**, voie OCR fonctionnelle avec la clé), puis crash étape 2 au 1er document : `AttributeError: 'Chat' object has no attribute 'completions'`, masqué en `ValueError: Analysis completion failed`.
+
+### Cause racine
+`analysis.py` appelait `client.chat.completions.create(...)` (ancienne API), alors que le SDK mistralai 3.x expose `client.chat.complete(...)` (vérifié : `Chat` a `complete`, pas `completions`). Les tests ne l'avaient pas vu car le faux client imitait la mauvaise forme.
+
+### Correctif (3 points, demandés par l'utilisateur)
+1. `analysis.py` v0.2.1 : appel `client.chat.complete(model=..., messages=..., response_format={"type": "json_object"})`.
+2. Tests : fakes en `chat.complete` + **test de garde** `test_sdk_chat_api_shape` (`Chat` a `complete`, n'a pas `completions`).
+3. `pipeline.py` v0.4.1 : `analyze_base` résilient — `ValueError` par document attrapé, document ignoré avec avertissement stderr, le lot continue (test `test_analyze_base_skips_failing_document`).
+
+### Validation
+- `python -m pytest` → **98 tests passent** (96 + 2 nouveaux). Commit + push sur `dev` (demandé explicitement).
+
+### Note d'usage
+- Tant que l'analyse n'est pas persistée (EPIC E6), chaque `pipeline --analyze` réappelle l'API pour **tous** les documents persistés en base ; pour un essai économique, utiliser une base neuve (`--base` vers un nouveau fichier).
+
+### Blocages
+- Aucun.
+
+### Prochaine séance
+- Re-test utilisateur sur petit corpus avec base neuve ; puis plans détaillés et implémentation de **T5.1-T5.3** (EPIC E5).

@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 # Application  : personalDocAgent
 # Script       : analysis.py
-# Version      : 0.2.0
+# Version      : 0.2.1
 # Date         : 2026-11-12
 # Design       : TSC + Mistral Vibe
 # Build        : Mistral Vibe
@@ -85,7 +85,7 @@ def analyze(text: str, categories: str, policy: AnalysisPolicy, client=None) -> 
         client = _client()
     user_prompt = build_user_prompt(categories, policy, text)
     try:
-        response = client.chat.completions.create(
+        response = client.chat.complete(
             model=ANALYSIS_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

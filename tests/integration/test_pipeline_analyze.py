@@ -33,13 +33,13 @@ class _FakeClient:
         self.payload = payload
         self.calls = 0
 
-        def create(*, model, messages, response_format=None):
+        def complete(*, model, messages, response_format=None):
             self.calls += 1
             return SimpleNamespace(
                 choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(payload)))]
             )
 
-        self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+        self.chat = SimpleNamespace(complete=complete)
 
 
 def _write_config(cfg: Path, root: Path) -> None:
@@ -87,6 +87,32 @@ def test_analyze_base_analyzes_persisted_documents(tmp_path, monkeypatch):
         assert record.issuer_candidate == "EDF"
         assert record.attributes == {"amount_eur": 123.45}
         assert 0.0 <= record.confidence <= 1.0
+
+
+def test_analyze_base_skips_failing_document(tmp_path, monkeypatch, capsys):
+    """TI-06 (résilience): un document dont l'analyse échoue est ignoré, les autres sont analysés."""
+    monkeypatch.chdir(tmp_path)
+    cfg, base = _corpus(tmp_path)
+    run(cfg, base)
+
+    class _FlakyClient:
+        def __init__(self):
+            self.calls = 0
+            self.chat = SimpleNamespace(complete=self._complete)
+
+        def _complete(self, *, model, messages, response_format=None):
+            self.calls += 1
+            if self.calls == 2:
+                raise ValueError("Analysis completion failed: invalid JSON")
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(PAYLOAD)))]
+            )
+
+    records = analyze_base(cfg, base, client=_FlakyClient())
+    assert len(records) == 1
+    assert records[0].category_id == 1
+    err = capsys.readouterr().err
+    assert "skipped" in err
 
 
 def test_cli_pipeline_analyze_flag(tmp_path, monkeypatch, capsys):
