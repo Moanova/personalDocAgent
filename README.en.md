@@ -8,6 +8,9 @@ Design principles (detailed in `docs/conception/conception.md`, in French): sing
 
 Coding standards: scripts, classes, methods and variables in English with docstrings and a standard header; project documentation in French; `AGENTS.md` and `README.md` in French, this file is the English README.
 
+![Status: In development](https://img.shields.io/badge/Statut-En%20développement-orange)
+![Python: 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python)
+
 ## Installation
 
 ```bash

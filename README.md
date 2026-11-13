@@ -8,6 +8,9 @@ Principes de conception (détaillés dans `docs/conception/conception.md`) : bas
 
 Standards de codage : scripts, classes, méthodes et variables en anglais avec docstring et en-tête standard ; documentation projet en français ; `AGENTS.md` et `README.md` en français, `README.en.md` pour la version anglaise.
 
+![Status: In development](https://img.shields.io/badge/Statut-En%20développement-orange)
+![Python: 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python)
+
 ## Installation
 
 ```bash
